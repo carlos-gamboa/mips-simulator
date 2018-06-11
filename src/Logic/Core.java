@@ -73,40 +73,46 @@ public class Core {
         return currentInstruction;
     }
 
-    public void manageDADDI(Context context, int destinyRegister, int sourceRegister, int immediate){
-
+    public void manageDADDI(Context context, int destinyRegister, int sourceRegister, int inmediate){
+        context.setRegister(destinyRegister, context.getRegister(sourceRegister) + inmediate);
     }
 
-    public void manageDADD(Context context, int destinyRegister, int sourceRegister, int immediate){
-
+    public void manageDADD(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
+        context.setRegister(destinyRegister, context.getRegister(sourceRegister1) + context.getRegister(sourceRegister2));
     }
 
-    public void manageDSUB(Context context, int destinyRegister, int sourceRegister, int immediate){
-
+    public void manageDSUB(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
+        context.setRegister(destinyRegister, context.getRegister(sourceRegister1) - context.getRegister(sourceRegister2));
     }
 
-    public void manageDMUL(Context context, int destinyRegister, int sourceRegister, int immediate){
-
+    public void manageDMUL(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
+        context.setRegister(destinyRegister, context.getRegister(sourceRegister1) * context.getRegister(sourceRegister2));
     }
 
-    public void manageDDIV(Context context, int destinyRegister, int sourceRegister, int immediate){
-
+    public void manageDDIV(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
+        context.setRegister(destinyRegister, context.getRegister(sourceRegister1) / context.getRegister(sourceRegister2));
     }
 
-    public void manageBEQZ(Context context, int sourceRegister, int immediate){
-
+    public void manageBEQZ(Context context, int sourceRegister, int inmediate){
+        if(context.getRegister(sourceRegister) == 0){
+            context.setPc(context.getPc() + (4 * inmediate));
+        }
     }
 
-    public void manageBNEZ(Context context, int sourceRegister, int immediate){
-
+    public void manageBNEZ(Context context, int sourceRegister, int inmediate){
+        if(context.getRegister(sourceRegister) != 0){
+            context.setPc(context.getPc() + (4 * inmediate));
+        }
     }
 
-    public void manageJAL(Context context, int immediate){
-
+    public void manageJAL(Context context, int inmediate){
+        //Copy the address of the next instruction on register 31
+        context.setRegister(31, context.getPc());
+        context.setPc(context.getPc() + inmediate);
     }
 
     public void manageJR(Context context, int sourceRegister){
-
+        context.setPc(context.getRegister(sourceRegister));
     }
 
     private void copyFromOtherCacheToMemory(){
