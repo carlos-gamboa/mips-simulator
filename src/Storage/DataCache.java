@@ -17,7 +17,6 @@ public class DataCache {
     }
 
     private int calculateIndexByLabel(int label){
-        //TODO: Calculate index of the block by it's label
-        return 0;
+        return label % blocks.length;
     }
 }

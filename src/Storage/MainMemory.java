@@ -20,13 +20,11 @@ public class MainMemory {
     }
 
     public int getBlockLabelByAddress(int address){
-        //TODO: Calculate block label by address.
-        return 1;
+        return address / (16);
     }
 
     public int getBlockWordByAddress(int address){
-        //TODO: Calculate block label by address.
-        return 1;
+        return (address % 16)/4;
     }
 
     public void setDataBlock(DataBlock block, int i){
