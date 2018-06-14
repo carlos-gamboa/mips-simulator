@@ -13,8 +13,7 @@ public class DualCore extends Core {
     private ThreadStatus thread2Status;
     //Ok se reserva antes de usar el bus
     private int thread2ReservedPosition;
-    private Thread thread1;
-    private Thread thread2;
+
     private int oldestThread;
 
     public DualCore(Simulation simulation){
@@ -23,13 +22,7 @@ public class DualCore extends Core {
         this.thread2Context = null;
         this.thread1Status = ThreadStatus.Running;
         this.oldestThread = 1;
-        this.thread1 = (new Thread(new CoreThread(this, true, this.thread1Context)));
-        this.thread2 = (new Thread(new CoreThread(this, false, this.thread2Context)));
-    }
 
-    public void startRunning (){
-        this.thread1.run();
-        this.thread2.run();
     }
 
     public Context getThread1Context() {

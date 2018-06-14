@@ -12,11 +12,15 @@ public class InstructionCache {
         return blocks[i];
     }
 
+    public void setBlock(InstructionBlock block, int i) {
+        this.blocks[i] = block;
+    }
+
     public boolean hasBlock(int label){
         return (this.blocks[this.calculateIndexByLabel(label)].getLabel() == label);
     }
 
-    private int calculateIndexByLabel(int label){
+    public int calculateIndexByLabel(int label){
         return label % blocks.length;
     }
 

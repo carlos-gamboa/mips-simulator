@@ -16,6 +16,7 @@ public class Core {
 
     public boolean isSimpleCore;
     public int clock;
+    public boolean isRunning;
 
     public Core (Simulation simulation, int numberOfBlocks, boolean isSimpleCore) {
         this.simulation = simulation;
@@ -23,6 +24,23 @@ public class Core {
         this.instructionCache = new InstructionCache(numberOfBlocks);
         this.clock = 0;
         this.isSimpleCore = isSimpleCore;
+        this.isRunning = true;
+    }
+
+    public Instruction getCurrentInstruction() {
+        return currentInstruction;
+    }
+
+    public void setCurrentInstruction(Instruction currentInstruction) {
+        this.currentInstruction = currentInstruction;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    public void setRunning(boolean running) {
+        isRunning = running;
     }
 
     public DataCache getDataCache() {
@@ -115,15 +133,12 @@ public class Core {
         context.setPc(context.getRegister(sourceRegister));
     }
 
-    private void copyFromOtherCacheToMemory(){
-
+    public void copyFromMemoryToDataCache(int label){
+        this.dataCache.setBlock(this.simulation.getMainMemory().getDataBlock(label), this.dataCache.calculateIndexByLabel(label));
+        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(label)).setBlockStatus(CacheStatus.Shared);
     }
 
-    private void copyFromCacheToMemory(){
-
-    }
-
-    private void copyFromMemoryToCache(){
-
+    public void copyFromMemoryToInstructionCache(int label){
+        this.instructionCache.setBlock(this.simulation.getMainMemory().getInstructionBlock(label), this.instructionCache.calculateIndexByLabel(label));
     }
 }

@@ -5,20 +5,21 @@ import Storage.Instruction;
 
 public class CoreThread implements Runnable {
 
-    private DualCore dualCore;
-    private boolean isThread1;
-    private Context context;
+    private volatile DualCore dualCore;
+    private volatile boolean isThread1;
+    private volatile Context context;
 
-    public CoreThread (DualCore dualCore, boolean isThread1, Context context){
+    public CoreThread (DualCore dualCore, boolean isThread1){
         this.dualCore = dualCore;
         this.isThread1 = isThread1;
-        this.context = context;
     }
 
     public void run(){
         if (isThread1){
+            this.context = this.dualCore.getThread1Context();
             this.runThread1();
         } else {
+            this.context = this.dualCore.getThread2Context();
             this.runThread2();
         }
     }

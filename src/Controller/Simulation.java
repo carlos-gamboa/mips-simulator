@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Simulation {
 
     private Deque<Context> threadQueue;
+    private Deque<Context> finishedThreads;
     private FileReader fileReader;
 
     private CyclicBarrier barrier;
@@ -30,6 +31,7 @@ public class Simulation {
         this.dataBus = new ReentrantLock();
         this.instructionsBus = new ReentrantLock();
         this.threadQueue = new ArrayDeque<>();
+        this.finishedThreads = new ArrayDeque<>();
     }
 
     public void start(){
@@ -47,6 +49,10 @@ public class Simulation {
 
     public synchronized void addContext(Context context){
         this.threadQueue.push(context);
+    }
+
+    public synchronized void addFinishedContext(Context context){
+        this.finishedThreads.push(context);
     }
 
     public MainMemory getMainMemory() {
@@ -78,6 +84,10 @@ public class Simulation {
     }
 
     public void unlockInstructionsCacheBlock(){
+    }
+
+    public boolean areMoreContexts(){
+        return this.threadQueue.isEmpty();
     }
 
     public boolean tryLockDataCacheBlock(boolean isSimpleCore, int blockLabel){

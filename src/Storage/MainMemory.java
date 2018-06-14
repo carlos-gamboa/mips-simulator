@@ -10,13 +10,12 @@ public class MainMemory {
         this.instructionBlocks = new InstructionBlock[40];
     }
 
-    public Block getBlock(int i) {
-        if (i < 24){
-            return dataBlocks[i];
-        }
-        else {
-            return instructionBlocks[i - 24];
-        }
+    public DataBlock getDataBlock(int i) {
+        return dataBlocks[i];
+    }
+
+    public InstructionBlock getInstructionBlock(int i) {
+        return instructionBlocks[i - 24];
     }
 
     public int getBlockLabelByAddress(int address){
