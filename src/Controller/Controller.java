@@ -15,6 +15,10 @@ public class Controller {
     public void start(){
         try {
             this.fileReader.readThreads();
+            this.fileReader.printInstructionsStartingPoints();
+            this.fileReader.addInstructionsToMemory(this.simulation.getMainMemory());
+            this.fileReader.addContextsToSimulation(this.simulation.getThreadQueue());
+            this.fileReader.printMemoryBlocks(this.simulation.getMainMemory().getInstructionBlocks());
         } catch (IOException e) {
             e.printStackTrace();
         }

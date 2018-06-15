@@ -96,6 +96,14 @@ public class Simulation {
 
     public void unlockDataCacheBlock(boolean isSimpleCore, int blockLabel){
     }
+    
+    public Deque<Context> getThreadQueue() {
+        return threadQueue;
+    }
+
+    public void setThreadQueue(Deque<Context> threadQueue) {
+        this.threadQueue = threadQueue;
+    }
 
     public DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
