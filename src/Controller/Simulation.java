@@ -39,8 +39,8 @@ public class Simulation {
     }
 
     public void start(){
-        this.dualCore = new DualCore(this);
-        this.simpleCore = new SimpleCore(this);
+        this.dualCore = new DualCore(this, this.quantum);
+        this.simpleCore = new SimpleCore(this, this.quantum);
     }
 
     public CyclicBarrier getBarrier() {

@@ -20,8 +20,8 @@ public class DualCore extends Core {
 
     private int oldestThread;
 
-    public DualCore(Simulation simulation){
-        super(simulation, 8, false);
+    public DualCore(Simulation simulation, int quantum){
+        super(simulation, 8, false, quantum);
         this.thread1Context = super.getSimulation().getNextContext();
         this.thread2Context = null;
         this.thread1Status = ThreadStatus.Running;

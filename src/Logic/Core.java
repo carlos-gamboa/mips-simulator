@@ -17,9 +17,11 @@ public class Core implements Runnable {
     public boolean isSimpleCore;
     public int clock;
     public boolean isRunning;
+    public int quantum;
 
-    public Core (Simulation simulation, int numberOfBlocks, boolean isSimpleCore) {
+    public Core (Simulation simulation, int numberOfBlocks, boolean isSimpleCore, int quantum) {
         this.simulation = simulation;
+        this.quantum = quantum;
         this.dataCache = new DataCache(numberOfBlocks);
         this.instructionCache = new InstructionCache(numberOfBlocks);
         this.clock = 0;
@@ -77,6 +79,14 @@ public class Core implements Runnable {
 
     public void setClock(int clock) {
         this.clock = clock;
+    }
+
+    public int getQuantum() {
+        return quantum;
+    }
+
+    public void setQuantum(int quantum) {
+        this.quantum = quantum;
     }
 
     public void nextCycle(){
