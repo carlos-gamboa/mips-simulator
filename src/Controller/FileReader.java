@@ -74,11 +74,12 @@ public class FileReader {
         int instructionNumber = 1;
         InstructionBlock[] instructionBlocks = new InstructionBlock[40];
         InstructionBlock block = new InstructionBlock();
+        Instruction instruction;
         boolean isWritingBlock = false;
 
         for (int i = 0; i < instructions.size() ;  i++) {
 
-            Instruction instruction = instructions.get(i);
+            instruction = instructions.get(i);
 
 /*            System.out.println("I = "+i);
             System.out.println("INSTRUCTIONS");
@@ -86,7 +87,7 @@ public class FileReader {
             System.out.println(instruction.getSourceRegister());
             System.out.println(instruction.getDestinyRegister());
             System.out.println(instruction.getImmediate());*/
-            System.out.println(instructionNumber +  "   " + blockNumber);
+            //System.out.println(instructionNumber +  "   " + blockNumber);
 
             if (instructionNumber == 4){ //If it is the last instruction in the block, change block and add block to array of blocks
                 isWritingBlock = false;
@@ -94,6 +95,7 @@ public class FileReader {
                 instructionBlocks[blockNumber] = block;
                 blockNumber++;
                 instructionNumber = 1;
+                block = new InstructionBlock();
             }
             else{ //If it is any other instruction on the block, add it and add to the insturction number counter
                 isWritingBlock = true;
