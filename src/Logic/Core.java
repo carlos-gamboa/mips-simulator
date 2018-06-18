@@ -5,7 +5,7 @@ import Storage.*;
 
 import java.util.concurrent.BrokenBarrierException;
 
-public class Core {
+public class Core implements Runnable {
 
     public DataCache dataCache;
     public InstructionCache instructionCache;
@@ -25,6 +25,10 @@ public class Core {
         this.clock = 0;
         this.isSimpleCore = isSimpleCore;
         this.isRunning = true;
+    }
+
+    public void run(){
+
     }
 
     public Instruction getCurrentInstruction() {

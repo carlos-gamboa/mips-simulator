@@ -4,6 +4,7 @@ import Controller.Simulation;
 import Storage.CacheStatus;
 import Storage.Context;
 import Storage.DataBlock;
+import Storage.Instruction;
 
 public class DualCore extends Core {
 
@@ -11,6 +12,9 @@ public class DualCore extends Core {
     private Context thread2Context;
     private ThreadStatus thread1Status;
     private ThreadStatus thread2Status;
+    private Thread thread1;
+    private Thread thread2;
+
     //Ok se reserva antes de usar el bus
     private int thread2ReservedPosition;
 
@@ -22,7 +26,22 @@ public class DualCore extends Core {
         this.thread2Context = null;
         this.thread1Status = ThreadStatus.Running;
         this.oldestThread = 1;
+        this.thread1 = new Thread(this, "Thread 1");
+        this.thread2 = new Thread(this, "Thread 2");
+    }
 
+    public void start(){
+        this.thread1.start();
+        this.thread2.start();
+    }
+
+    @Override
+    public void run(){
+        if (Thread.currentThread().getName() == "Thread 1"){
+            this.runThread1();
+        } else {
+            this.runThread2();
+        }
     }
 
     public Context getThread1Context() {
@@ -57,8 +76,61 @@ public class DualCore extends Core {
         this.thread2Status = thread2Status;
     }
 
+    private void manageInstruction(Instruction instruction, Context context){
+        switch (instruction.getOperationCode()){
+            case 8:
+                this.manageDADDI(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 32:
+                this.manageDADD(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 34:
+                this.manageDSUB(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 12:
+                this.manageDMUL(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 14:
+                this.manageDDIV(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 4:
+                this.manageBEQZ(context, instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 5:
+                this.manageBNEZ(context, instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 3:
+                this.manageJAL(context, instruction.getImmediate());
+                break;
+            case 2:
+                this.manageJR(context, instruction.getSourceRegister());
+                break;
+            case 35:
+                this.manageLoadWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 43:
+                this.manageStoreWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 63:
+                this.manageFIN();
+                break;
+        }
+    }
+
     public void manageFIN (){
 
+    }
+
+    private void runThread1(){
+        if (this.getThread1Status() == ThreadStatus.Running){
+            this.manageInstruction(this.getInstruction(this.thread1Context.getPc()), this.thread1Context);
+        }
+    }
+
+    private void runThread2(){
+        if (this.getThread2Status() == ThreadStatus.Running){
+            this.manageInstruction(this.getInstruction(this.thread2Context.getPc()), this.thread2Context);
+        }
     }
 
     public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate){

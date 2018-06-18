@@ -4,22 +4,38 @@ import Controller.Simulation;
 import Storage.CacheStatus;
 import Storage.Context;
 import Storage.DataBlock;
+import Storage.Instruction;
 
 public class SimpleCore extends Core {
 
-    private volatile Context currentThread;
+    private volatile Context threadContext;
+    private Thread thread;
 
     public SimpleCore(Simulation simulation){
         super(simulation, 4, true);
-        this.currentThread = super.getSimulation().getNextContext();
+        this.threadContext = super.getSimulation().getNextContext();
+        this.thread = new Thread(this, "Thread 0");
+    }
+
+    public void start(){
+        this.thread.start();
+    }
+
+    @Override
+    public void run(){
+        while (super.isRunning()){
+            Instruction instruction = this.getInstruction(this.threadContext.getPc());
+            this.threadContext.setPc(this.threadContext.getPc() + 4);
+            this.manageInstruction(instruction);
+        }
     }
 
     public Context getCurrentThread() {
-        return currentThread;
+        return threadContext;
     }
 
     public void setCurrentThread(Context currentThread) {
-        this.currentThread = currentThread;
+        this.threadContext = currentThread;
     }
 
     public void manageFIN (){
@@ -27,8 +43,49 @@ public class SimpleCore extends Core {
             super.setRunning(false);
         }
         else {
-            super.simulation.addFinishedContext(this.currentThread);
-            this.currentThread = super.simulation.getNextContext();
+            super.simulation.addFinishedContext(this.threadContext);
+            this.threadContext = super.simulation.getNextContext();
+        }
+    }
+
+    private void manageInstruction(Instruction instruction){
+        switch (instruction.getOperationCode()){
+            case 8:
+                this.manageDADDI(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 32:
+                this.manageDADD(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 34:
+                this.manageDSUB(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 12:
+                this.manageDMUL(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 14:
+                this.manageDDIV(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 4:
+                this.manageBEQZ(this.threadContext, instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 5:
+                this.manageBNEZ(this.threadContext, instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 3:
+                this.manageJAL(this.threadContext, instruction.getImmediate());
+                break;
+            case 2:
+                this.manageJR(this.threadContext, instruction.getSourceRegister());
+                break;
+            case 35:
+                this.manageLoadWord(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 43:
+                this.manageStoreWord(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                break;
+            case 63:
+                this.manageFIN();
+                break;
         }
     }
 
@@ -197,7 +254,7 @@ public class SimpleCore extends Core {
     }
 
     private void startOver(){
-        this.currentThread.setPc(this.currentThread.getPc() + 4);
+        this.threadContext.setPc(this.threadContext.getPc() + 4);
     }
 
     private boolean manageCheckOtherCache(int blockLabel, boolean isLoad){
