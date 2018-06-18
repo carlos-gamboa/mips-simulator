@@ -24,9 +24,13 @@ public class Simulation {
     private SimpleCore simpleCore;
 
     private int clock;
+    private int quantum;
+    private boolean slowMode;
 
     public Simulation(){
         this.clock = 0;
+        this.quantum = 0;
+        this.slowMode = false;
         this.mainMemory = new MainMemory();
         this.dataBus = new ReentrantLock();
         this.instructionsBus = new ReentrantLock();
@@ -143,5 +147,21 @@ public class Simulation {
         else {
             this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
         }
+    }
+
+    public int getQuantum() {
+        return quantum;
+    }
+
+    public void setQuantum(int quantum) {
+        this.quantum = quantum;
+    }
+
+    public boolean isSlowMode() {
+        return slowMode;
+    }
+
+    public void setSlowMode(boolean slowMode) {
+        this.slowMode = slowMode;
     }
 }
