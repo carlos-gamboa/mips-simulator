@@ -24,9 +24,13 @@ public class Simulation {
     private SimpleCore simpleCore;
 
     private int clock;
+    private int quantum;
+    private boolean slowMode;
 
     public Simulation(){
         this.clock = 0;
+        this.quantum = 0;
+        this.slowMode = false;
         this.mainMemory = new MainMemory();
         this.dataBus = new ReentrantLock();
         this.instructionsBus = new ReentrantLock();
@@ -96,6 +100,14 @@ public class Simulation {
 
     public void unlockDataCacheBlock(boolean isSimpleCore, int blockLabel){
     }
+    
+    public Deque<Context> getThreadQueue() {
+        return threadQueue;
+    }
+
+    public void setThreadQueue(Deque<Context> threadQueue) {
+        this.threadQueue = threadQueue;
+    }
 
     public DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
@@ -135,5 +147,21 @@ public class Simulation {
         else {
             this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
         }
+    }
+
+    public int getQuantum() {
+        return quantum;
+    }
+
+    public void setQuantum(int quantum) {
+        this.quantum = quantum;
+    }
+
+    public boolean isSlowMode() {
+        return slowMode;
+    }
+
+    public void setSlowMode(boolean slowMode) {
+        this.slowMode = slowMode;
     }
 }

@@ -34,4 +34,19 @@ public class MainMemory {
         instructionBlocks[i - 24] = block;
     }
 
+    public DataBlock[] getDataBlocks() {
+        return dataBlocks;
+    }
+
+    public void setDataBlocks(DataBlock[] dataBlocks) {
+        this.dataBlocks = dataBlocks;
+    }
+
+    public InstructionBlock[] getInstructionBlocks() {
+        return instructionBlocks;
+    }
+
+    public void setInstructionBlocks(InstructionBlock[] instructionBlocks) {
+        this.instructionBlocks = instructionBlocks;
+    }
 }
