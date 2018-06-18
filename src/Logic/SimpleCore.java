@@ -179,71 +179,46 @@ public class SimpleCore extends Core {
                 }
                 else {
                     if (this.simulation.getDataBus().tryLock()) {
-                        this.manageCheckOtherCache(blockLabel, false);
-
-                        this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
-                        this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
-                        this.nextCycle();
+                        boolean result = this.manageCheckOtherCache(blockLabel, false);
+                        if (result){
+                            this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
+                            this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
+                            this.simulation.getDataBus().unlock();
+                            this.dataCache.getBlock(blockLabel).getLock().unlock();
+                            this.nextCycle();
+                        }
                     }
                     else {
                         this.dataCache.getBlock(blockLabel).getLock().unlock();
                         this.nextCycle();
                         this.startOver();
                     }
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
-                    context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                    this.nextCycle();
                 }
             }
             else {
                 if (this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(blockLabel).getBlockStatus() == CacheStatus.Modified){
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(blockLabel), blockLabel);
-                        //TODO: 40 cycles
+                        this.manageDataCacheFail();
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
                     }
-                    if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
-                        if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
-                            DataBlock blockFromOtherCache = this.simulation.getDataBlockFromOtherCache(this.isSimpleCore, blockLabel);
-                            if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
-                                //TODO: Copy to cache
-                                this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
-                                this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                            }
-                            else if (blockFromOtherCache.getBlockStatus() == CacheStatus.Shared){
-                                this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy to cache
-                            }
-                            else {
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy from memory
-                            }
-                        }
-                        else {
-                            this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                            //TODO: Copy from memory
-                        }
-                    }
-                    else {
+                    boolean result = this.manageCheckOtherCache(blockLabel, false);
+                    if (result){
+                        this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
+                        this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
                         this.simulation.getDataBus().unlock();
                         this.dataCache.getBlock(blockLabel).getLock().unlock();
                         this.nextCycle();
-                        //TODO: start over
                     }
                 }
                 else {
                     this.dataCache.getBlock(blockLabel).getLock().unlock();
                     this.nextCycle();
-                    //TODO: start over
+                    this.startOver();
                 }
-                this.dataCache.getBlock(blockLabel).getLock().unlock();
-                context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                this.nextCycle();
             }
         } else {
             this.nextCycle();
-            //TODO: start over
+            this.startOver();
         }
     }
 
