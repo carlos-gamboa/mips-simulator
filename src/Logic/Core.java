@@ -88,7 +88,36 @@ public class Core {
 
     public Instruction getInstruction(int pc){
         //TODO: Get next Instruction
-        return currentInstruction;
+        Instruction instruction = new Instruction();
+        InstructionBlock block;
+        int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(pc);
+        int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(pc);
+        int cacheIndex = this.instructionCache.calculateIndexByLabel(blockLabel);
+        if (this.instructionCache.getBlock(cacheIndex).getLock().tryLock()) {
+            if (!this.instructionCache.hasBlock(cacheIndex)) { //InstructionCache Fail
+                if (this.simulation.getInstructionsBus().tryLock()) {
+                    this.copyFromMemoryToInstructionCache(cacheIndex);
+                    for (int i = 0; i < 40; ++i) {
+                        this.nextCycle();
+                    }
+                    this.simulation.getDataBus().unlock();
+                }
+                else {
+                    this.instructionCache.getBlock(cacheIndex).getLock().unlock();
+                    this.nextCycle();
+                    //this.startOver();
+                }
+            }
+            block = this.instructionCache.getBlock(cacheIndex);
+            this.instructionCache.getBlock(cacheIndex).getLock().unlock();
+            instruction = block.getValue(blockWord);
+        }
+        else
+        {
+            this.nextCycle();
+            //this.startOver();
+        }
+        return instruction;
     }
 
     public void manageDADDI(Context context, int destinyRegister, int sourceRegister, int inmediate){
