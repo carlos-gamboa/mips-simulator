@@ -6,6 +6,9 @@ public class InstructionBlock extends Block {
 
     public InstructionBlock() {
         this.values = new Instruction[4];
+        for (int i = 0; i < 4; ++i){
+            this.values[i] = new Instruction(0,0,0,0);
+        }
     }
 
     public Instruction getValue (int i){

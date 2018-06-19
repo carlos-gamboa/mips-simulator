@@ -6,6 +6,9 @@ public class InstructionCache {
 
     public InstructionCache (int numberOfBlocks) {
         this.blocks = new InstructionBlock[numberOfBlocks];
+        for (int i = 0; i < numberOfBlocks; ++i){
+            this.blocks[i] = new InstructionBlock();
+        }
     }
 
     public InstructionBlock getBlock(int i) {

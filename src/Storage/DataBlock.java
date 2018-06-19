@@ -8,6 +8,9 @@ public class DataBlock extends Block {
     public DataBlock() {
         this.blockStatus = CacheStatus.Invalid;
         this.data = new int[4];
+        for (int i = 0; i < 4; ++i){
+            this.data[i] = 1;
+        }
     }
 
     public CacheStatus getBlockStatus() {

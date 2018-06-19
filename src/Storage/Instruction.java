@@ -13,8 +13,6 @@ public class Instruction {
         this.immediate = immediate;
     }
 
-    public Instruction() {
-    }
 
     public int getOperationCode() {
         return operationCode;

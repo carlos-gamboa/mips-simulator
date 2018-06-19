@@ -102,7 +102,7 @@ public class Core implements Runnable {
 
     public Instruction getInstruction(int pc){
         //TODO: Get next Instruction
-        Instruction instruction = new Instruction();
+        Instruction instruction = new Instruction(0,0,0,0);
         InstructionBlock block;
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(pc);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(pc);

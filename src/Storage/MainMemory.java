@@ -8,6 +8,12 @@ public class MainMemory {
     public MainMemory () {
         this.dataBlocks = new DataBlock[24];
         this.instructionBlocks = new InstructionBlock[40];
+        for (int i = 0; i< 24; ++i){
+            this.dataBlocks[i] = new DataBlock();
+        }
+        for (int i = 0; i< 40; ++i){
+            this.instructionBlocks[i] = new InstructionBlock();
+        }
     }
 
     public DataBlock getDataBlock(int i) {
