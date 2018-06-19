@@ -12,11 +12,11 @@ import java.util.Deque;
 
 public class FileReader {
 
-    String[] textfiles;
-    ArrayList<Instruction> instructions;
-    int [] threadStartingPoint;
-    int instructionNumber;
-    int fileNumber;
+    private String[] textfiles;
+    private ArrayList<Instruction> instructions;
+    private int [] threadStartingPoint;
+    private int instructionNumber;
+    private int fileNumber;
 
 
     public FileReader(String[] textfiles) {
@@ -27,6 +27,46 @@ public class FileReader {
         this.instructionNumber = 0;
         this.fileNumber = 0;
 
+    }
+
+    public String[] getTextfiles() {
+        return textfiles;
+    }
+
+    public void setTextfiles(String[] textfiles) {
+        this.textfiles = textfiles;
+    }
+
+    public ArrayList<Instruction> getInstructions() {
+        return instructions;
+    }
+
+    public void setInstructions(ArrayList<Instruction> instructions) {
+        this.instructions = instructions;
+    }
+
+    public int[] getThreadStartingPoint() {
+        return threadStartingPoint;
+    }
+
+    public void setThreadStartingPoint(int[] threadStartingPoint) {
+        this.threadStartingPoint = threadStartingPoint;
+    }
+
+    public int getInstructionNumber() {
+        return instructionNumber;
+    }
+
+    public void setInstructionNumber(int instructionNumber) {
+        this.instructionNumber = instructionNumber;
+    }
+
+    public int getFileNumber() {
+        return fileNumber;
+    }
+
+    public void setFileNumber(int fileNumber) {
+        this.fileNumber = fileNumber;
     }
 
     public void readThreads() throws IOException {
@@ -56,62 +96,6 @@ public class FileReader {
             catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-
-
-    public void addInstructionsToMemory(MainMemory memory){
-
-        int blockNumber = 0;
-        int instructionNumber = 0;
-        InstructionBlock[] instructionBlocks = new InstructionBlock[40];
-        InstructionBlock block = new InstructionBlock();
-        Instruction instruction;
-        boolean isWritingBlock = false;
-
-        for (int i = 0; i < this.instructions.size() ;  i++) {
-
-            instruction = this.instructions.get(i);
-
-            if (instructionNumber == 3){ //If it is the last instruction in the block, change block and add block to array of blocks
-                isWritingBlock = false;
-                block.setValue(instructionNumber, instruction);
-                instructionBlocks[blockNumber] = block;
-                blockNumber++;
-                instructionNumber = 0;
-                block = new InstructionBlock();
-            }
-            else{ //If it is any other instruction on the block, add it and add to the instruction number counter
-                isWritingBlock = true;
-                block.setValue(instructionNumber, instruction);
-                instructionNumber++;
-            }
-        }
-        if (isWritingBlock){ //If one block was being written and interations runs out of instructions it writes the unfinished block
-            for (int i = instructionNumber; i < 4; ++i){
-                block.setValue(i, new Instruction(0,0,0,0));
-            }
-            instructionBlocks[blockNumber] = block;
-        }
-        for (int i = blockNumber; i < 40; ++i){
-            instructionBlocks[i] = new InstructionBlock();
-        }
-        memory.setInstructionBlocks(instructionBlocks);
-    }
-
-    public void addContextsToSimulation(Deque<Context> threadQueue){
-
-        //We calculate the corresponding adress in memory by using the
-        //equation address = 384 + (instructionNumber * 4)
-        //384 being the byte in memory where instructions begin and 4 being the size in memory of an instruction
-        Context context;
-
-        for (int i = 0; i < this.threadStartingPoint.length; i++){
-            context = new Context();
-            int memoryAddress = 384 + (this.threadStartingPoint[i] * 4);
-            context.setPc(memoryAddress);
-            threadQueue.addLast(context);
         }
     }
 

@@ -5,6 +5,7 @@ import Logic.SimpleCore;
 import Storage.*;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReentrantLock;
@@ -163,5 +164,59 @@ public class Simulation {
 
     public void setSlowMode(boolean slowMode) {
         this.slowMode = slowMode;
+    }
+
+    public void addInstructionsToMemory(ArrayList<Instruction> instructions){
+
+        int blockNumber = 0;
+        int instructionNumber = 0;
+        InstructionBlock[] instructionBlocks = new InstructionBlock[40];
+        InstructionBlock block = new InstructionBlock();
+        Instruction instruction;
+        boolean isWritingBlock = false;
+
+        for (int i = 0; i < instructions.size() ;  i++) {
+
+            instruction = instructions.get(i);
+
+            if (instructionNumber == 3){ //If it is the last instruction in the block, change block and add block to array of blocks
+                isWritingBlock = false;
+                block.setValue(instructionNumber, instruction);
+                instructionBlocks[blockNumber] = block;
+                blockNumber++;
+                instructionNumber = 0;
+                block = new InstructionBlock();
+            }
+            else{ //If it is any other instruction on the block, add it and add to the instruction number counter
+                isWritingBlock = true;
+                block.setValue(instructionNumber, instruction);
+                instructionNumber++;
+            }
+        }
+        if (isWritingBlock){ //If one block was being written and interations runs out of instructions it writes the unfinished block
+            for (int i = instructionNumber; i < 4; ++i){
+                block.setValue(i, new Instruction(0,0,0,0));
+            }
+            instructionBlocks[blockNumber] = block;
+        }
+        for (int i = blockNumber; i < 40; ++i){
+            instructionBlocks[i] = new InstructionBlock();
+        }
+        this.mainMemory.setInstructionBlocks(instructionBlocks);
+    }
+
+    public void setContexts(int [] threadStartingPoint){
+
+        //We calculate the corresponding adress in memory by using the
+        //equation address = 384 + (instructionNumber * 4)
+        //384 being the byte in memory where instructions begin and 4 being the size in memory of an instruction
+        Context context;
+
+        for (int i = 0; i < threadStartingPoint.length; i++){
+            context = new Context();
+            int memoryAddress = 384 + (threadStartingPoint[i] * 4);
+            context.setPc(memoryAddress);
+            threadQueue.addLast(context);
+        }
     }
 }

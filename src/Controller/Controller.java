@@ -19,10 +19,8 @@ public class Controller {
             this.simulation.setQuantum(this.terminal.getQuantum());
             this.simulation.setSlowMode(this.terminal.getSimulationMode());
             this.fileReader.readThreads();
-            this.fileReader.printInstructionsStartingPoints();
-            this.fileReader.addInstructionsToMemory(this.simulation.getMainMemory());
-            this.fileReader.addContextsToSimulation(this.simulation.getThreadQueue());
-            this.fileReader.printMemoryBlocks(this.simulation.getMainMemory().getInstructionBlocks());
+            this.simulation.addInstructionsToMemory(this.fileReader.getInstructions());
+            this.simulation.setContexts(this.fileReader.getThreadStartingPoint());
         } catch (IOException e) {
             e.printStackTrace();
         }
