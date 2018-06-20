@@ -33,11 +33,6 @@ public class SimpleCore extends Core {
             this.threadContext.setPc(this.threadContext.getPc() + 4);
             this.manageInstruction(instruction);
             System.out.println("Instruction: " + instruction.toString());
-            try {
-                Thread.currentThread().sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -57,6 +52,7 @@ public class SimpleCore extends Core {
             super.simulation.addFinishedContext(this.threadContext);
             this.threadContext = super.simulation.getNextContext();
         }
+        super.nextCycle();
     }
 
     private void manageInstruction(Instruction instruction){
@@ -66,16 +62,16 @@ public class SimpleCore extends Core {
                     this.manageDADDI(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
                     break;
                 case 32:
-                    this.manageDADD(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.manageDADD(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
                     break;
                 case 34:
-                    this.manageDSUB(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.manageDSUB(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
                     break;
                 case 12:
-                    this.manageDMUL(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.manageDMUL(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
                     break;
                 case 14:
-                    this.manageDDIV(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.manageDDIV(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
                     break;
                 case 4:
                     this.manageBEQZ(this.threadContext, instruction.getSourceRegister(), instruction.getImmediate());
@@ -99,6 +95,7 @@ public class SimpleCore extends Core {
                     this.manageFIN();
                     break;
             }
+            this.remainingQuantum--;
         } else {
             this.manageQuantumEnd();
         }
@@ -169,7 +166,7 @@ public class SimpleCore extends Core {
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
             if (this.dataCache.hasBlock(blockLabel)){
-                CacheStatus blockStatus = this.dataCache.getBlock(blockLabel).getBlockStatus();
+                CacheStatus blockStatus = this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus();
                 if (blockStatus == CacheStatus.Shared){
                     if (this.simulation.getDataBus().tryLock()) {
                         if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)) {
@@ -206,8 +203,8 @@ public class SimpleCore extends Core {
                     if (this.simulation.getDataBus().tryLock()) {
                         boolean result = this.manageCheckOtherCache(blockLabel, false);
                         if (result){
-                            this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
-                            this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
                             this.simulation.getDataBus().unlock();
                             this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
@@ -224,14 +221,14 @@ public class SimpleCore extends Core {
             }
             else {
                 if (this.simulation.getDataBus().tryLock()) {
-                    if (this.dataCache.getBlock(blockLabel).getBlockStatus() == CacheStatus.Modified){
+                    if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail();
                         this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
                     }
                     boolean result = this.manageCheckOtherCache(blockLabel, false);
                     if (result){
-                        this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
-                        this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
+                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
                         this.simulation.getDataBus().unlock();
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();

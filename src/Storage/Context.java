@@ -8,6 +8,9 @@ public class Context {
     public Context (){
         this.pc = 0;
         this.registers = new int[32];
+        for (int i = 0; i < this.registers.length; ++i){
+            this.registers[i] = 0;
+        }
     }
 
     public int getPc() {

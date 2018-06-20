@@ -107,7 +107,7 @@ public class Core implements Runnable {
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(pc);
         int cacheIndex = this.instructionCache.calculateIndexByLabel(blockLabel);
         if (this.instructionCache.getLock(cacheIndex).tryLock()) {
-            if (!this.instructionCache.hasBlock(cacheIndex)) { //InstructionCache Fail
+            if (!this.instructionCache.hasBlock(blockLabel)) { //InstructionCache Fail
                 if (this.simulation.getInstructionsBus().tryLock()) {
                     for (int i = 0; i < 40; ++i) {
                         this.nextCycle();
@@ -137,44 +137,53 @@ public class Core implements Runnable {
 
     public void manageDADDI(Context context, int destinyRegister, int sourceRegister, int inmediate){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister) + inmediate);
+        this.nextCycle();
     }
 
     public void manageDADD(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) + context.getRegister(sourceRegister2));
+        this.nextCycle();
     }
 
     public void manageDSUB(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) - context.getRegister(sourceRegister2));
+        this.nextCycle();
     }
 
     public void manageDMUL(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) * context.getRegister(sourceRegister2));
+        this.nextCycle();
     }
 
     public void manageDDIV(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) / context.getRegister(sourceRegister2));
+        this.nextCycle();
     }
 
     public void manageBEQZ(Context context, int sourceRegister, int inmediate){
         if(context.getRegister(sourceRegister) == 0){
             context.setPc(context.getPc() + (4 * inmediate));
         }
+        this.nextCycle();
     }
 
     public void manageBNEZ(Context context, int sourceRegister, int inmediate){
         if(context.getRegister(sourceRegister) != 0){
             context.setPc(context.getPc() + (4 * inmediate));
         }
+        this.nextCycle();
     }
 
     public void manageJAL(Context context, int inmediate){
         //Copy the address of the next instruction on register 31
         context.setRegister(31, context.getPc());
         context.setPc(context.getPc() + inmediate);
+        this.nextCycle();
     }
 
     public void manageJR(Context context, int sourceRegister){
         context.setPc(context.getRegister(sourceRegister));
+        this.nextCycle();
     }
 
     public void copyFromMemoryToDataCache(int label){

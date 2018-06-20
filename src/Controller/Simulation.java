@@ -42,7 +42,7 @@ public class Simulation {
     }
 
     public void start(){
-        //this.dualCore = new DualCore(this, this.quantum);
+        this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
         this.simpleCore.start();
         while (this.simpleCore.isRunning){
@@ -56,6 +56,7 @@ public class Simulation {
                 e.printStackTrace();
             }
         }
+        System.out.println("salio");
     }
 
     public CyclicBarrier getBarrier() {
@@ -212,6 +213,7 @@ public class Simulation {
                 block.setValue(i, new Instruction(0,0,0,0));
             }
             instructionBlocks[blockNumber] = block;
+            ++blockNumber;
         }
         for (int i = blockNumber; i < 40; ++i){
             instructionBlocks[i] = new InstructionBlock(i + 24);

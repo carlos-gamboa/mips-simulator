@@ -22,7 +22,6 @@ public class DualCore extends Core {
 
     public DualCore(Simulation simulation, int quantum){
         super(simulation, 8, false, quantum);
-        this.thread1Context = super.getSimulation().getNextContext();
         this.thread2Context = null;
         this.thread1Status = ThreadStatus.Running;
         this.oldestThread = 1;
@@ -31,6 +30,7 @@ public class DualCore extends Core {
     }
 
     public void start(){
+        this.thread1Context = super.getSimulation().getNextContext();
         this.thread1.start();
         this.thread2.start();
     }
