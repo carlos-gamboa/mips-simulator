@@ -7,8 +7,8 @@ public class Block {
     private int label;
     private ReentrantLock lock;
 
-    public Block(){
-        this.label = 0;
+    public Block(int label){
+        this.label = label;
         this.lock = new ReentrantLock();
     }
 

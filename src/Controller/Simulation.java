@@ -171,7 +171,7 @@ public class Simulation {
         int blockNumber = 0;
         int instructionNumber = 0;
         InstructionBlock[] instructionBlocks = new InstructionBlock[40];
-        InstructionBlock block = new InstructionBlock();
+        InstructionBlock block = new InstructionBlock(blockNumber + 24);
         Instruction instruction;
         boolean isWritingBlock = false;
 
@@ -185,7 +185,7 @@ public class Simulation {
                 instructionBlocks[blockNumber] = block;
                 blockNumber++;
                 instructionNumber = 0;
-                block = new InstructionBlock();
+                block = new InstructionBlock(blockNumber + 24);
             }
             else{ //If it is any other instruction on the block, add it and add to the instruction number counter
                 isWritingBlock = true;
@@ -200,7 +200,7 @@ public class Simulation {
             instructionBlocks[blockNumber] = block;
         }
         for (int i = blockNumber; i < 40; ++i){
-            instructionBlocks[i] = new InstructionBlock();
+            instructionBlocks[i] = new InstructionBlock(i + 24);
         }
         this.mainMemory.setInstructionBlocks(instructionBlocks);
     }

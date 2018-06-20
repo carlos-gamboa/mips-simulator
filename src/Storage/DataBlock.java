@@ -5,7 +5,8 @@ public class DataBlock extends Block {
     private int[] data;
     private CacheStatus blockStatus;
 
-    public DataBlock() {
+    public DataBlock(int label) {
+        super(label);
         this.blockStatus = CacheStatus.Invalid;
         this.data = new int[4];
         for (int i = 0; i < 4; ++i){
@@ -27,6 +28,16 @@ public class DataBlock extends Block {
 
     public void setData (int i, int value){
         this.data[i] = value;
+    }
+
+    public String toString(){
+        String block = "--- BLOCK " + super.getLabel() + " ---\n";
+        for (int i = 0; i < this.data.length; ++i){
+            block += String.valueOf(this.data[i]);
+            block += "\n";
+        }
+        block += "--- END OF BLOCK " + super.getLabel() + " ---";
+        return block;
     }
 
 }

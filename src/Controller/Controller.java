@@ -21,6 +21,7 @@ public class Controller {
             this.fileReader.readThreads();
             this.simulation.addInstructionsToMemory(this.fileReader.getInstructions());
             this.simulation.setContexts(this.fileReader.getThreadStartingPoint());
+            System.out.println(this.simulation.getMainMemory().toString());
         } catch (IOException e) {
             e.printStackTrace();
         }

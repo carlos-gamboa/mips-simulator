@@ -7,7 +7,7 @@ public class InstructionCache {
     public InstructionCache (int numberOfBlocks) {
         this.blocks = new InstructionBlock[numberOfBlocks];
         for (int i = 0; i < numberOfBlocks; ++i){
-            this.blocks[i] = new InstructionBlock();
+            this.blocks[i] = new InstructionBlock(-1);
         }
     }
 
@@ -25,6 +25,16 @@ public class InstructionCache {
 
     public int calculateIndexByLabel(int label){
         return label % blocks.length;
+    }
+
+    public String toString(){
+        String cache = "--- INSTRUCTIONS CACHE ---\n";
+        for (int i = 0; i < this.blocks.length; ++i){
+            cache += this.blocks[i].toString();
+            cache += "\n";
+        }
+        cache += "--- END OF INSTRUCTIONS CACHE ---";
+        return cache;
     }
 
 }

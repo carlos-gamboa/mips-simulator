@@ -45,4 +45,13 @@ public class Instruction {
     public void setImmediate(int immediate) {
         this.immediate = immediate;
     }
+
+    public String toString(){
+        String instruction = "";
+        instruction += this.operationCode;
+        instruction += " " + this.sourceRegister;
+        instruction += " " + this.destinyRegister;
+        instruction += " " + this.immediate;
+        return instruction;
+    }
 }

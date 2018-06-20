@@ -9,10 +9,10 @@ public class MainMemory {
         this.dataBlocks = new DataBlock[24];
         this.instructionBlocks = new InstructionBlock[40];
         for (int i = 0; i< 24; ++i){
-            this.dataBlocks[i] = new DataBlock();
+            this.dataBlocks[i] = new DataBlock(i);
         }
         for (int i = 0; i< 40; ++i){
-            this.instructionBlocks[i] = new InstructionBlock();
+            this.instructionBlocks[i] = new InstructionBlock(i + 24);
         }
     }
 
@@ -54,5 +54,19 @@ public class MainMemory {
 
     public void setInstructionBlocks(InstructionBlock[] instructionBlocks) {
         this.instructionBlocks = instructionBlocks;
+    }
+
+    public String toString(){
+        String memory = "--- MAIN MEMORY ---\n";
+        for (int i = 0; i < this.dataBlocks.length; ++i){
+            memory += this.dataBlocks[i].toString();
+            memory += "\n";
+        }
+        for (int i = 0; i < this.instructionBlocks.length; ++i){
+            memory += this.instructionBlocks[i].toString();
+            memory += "\n";
+        }
+        memory += "--- END OF MAIN MEMORY ---";
+        return memory;
     }
 }
