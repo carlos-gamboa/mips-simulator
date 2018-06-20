@@ -101,35 +101,36 @@ public class Core implements Runnable {
     }
 
     public Instruction getInstruction(int pc){
-        //TODO: Get next Instruction
-        Instruction instruction = new Instruction(0,0,0,0);
+        Instruction instruction = null;
         InstructionBlock block;
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(pc);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(pc);
         int cacheIndex = this.instructionCache.calculateIndexByLabel(blockLabel);
-        if (this.instructionCache.getBlock(cacheIndex).getLock().tryLock()) {
+        if (this.instructionCache.getLock(cacheIndex).tryLock()) {
             if (!this.instructionCache.hasBlock(cacheIndex)) { //InstructionCache Fail
                 if (this.simulation.getInstructionsBus().tryLock()) {
-                    this.copyFromMemoryToInstructionCache(cacheIndex);
                     for (int i = 0; i < 40; ++i) {
                         this.nextCycle();
                     }
-                    this.simulation.getDataBus().unlock();
+                    this.copyFromMemoryToInstructionCache(blockLabel);
+                    this.simulation.getInstructionsBus().unlock();
+                    block = this.instructionCache.getBlock(cacheIndex);
+                    instruction = block.getValue(blockWord);
+                    this.instructionCache.getLock(cacheIndex).unlock();
                 }
                 else {
-                    this.instructionCache.getBlock(cacheIndex).getLock().unlock();
+                    this.instructionCache.getLock(cacheIndex).unlock();
                     this.nextCycle();
-                    //this.startOver();
                 }
+            } else {
+                block = this.instructionCache.getBlock(cacheIndex);
+                instruction = block.getValue(blockWord);
+                this.instructionCache.getLock(cacheIndex).unlock();
             }
-            block = this.instructionCache.getBlock(cacheIndex);
-            this.instructionCache.getBlock(cacheIndex).getLock().unlock();
-            instruction = block.getValue(blockWord);
         }
         else
         {
             this.nextCycle();
-            //this.startOver();
         }
         return instruction;
     }

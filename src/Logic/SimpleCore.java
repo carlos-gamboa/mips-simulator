@@ -14,7 +14,6 @@ public class SimpleCore extends Core {
 
     public SimpleCore(Simulation simulation, int quantum){
         super(simulation, 4, true, quantum);
-        this.threadContext = super.getSimulation().getNextContext();
         this.thread = new Thread(this, "Thread 0");
     }
 
@@ -26,10 +25,19 @@ public class SimpleCore extends Core {
     public void run(){
         this.threadContext = super.simulation.getNextContext();
         this.remainingQuantum = super.getQuantum();
+        Instruction instruction;
         while (super.isRunning()){
-            Instruction instruction = this.getInstruction(this.threadContext.getPc());
+            do {
+                instruction = this.getInstruction(this.threadContext.getPc());
+            } while (instruction == null);
             this.threadContext.setPc(this.threadContext.getPc() + 4);
             this.manageInstruction(instruction);
+            System.out.println("Instruction: " + instruction.toString());
+            try {
+                Thread.currentThread().sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -99,11 +107,11 @@ public class SimpleCore extends Core {
     public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
-        if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().tryLock()){
+        if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
             if (this.dataCache.hasBlock(blockLabel)){
                 CacheStatus blockStatus = this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus();
                 if (blockStatus == CacheStatus.Modified || blockStatus == CacheStatus.Shared){
-                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
                     super.nextCycle();
                     this.remainingQuantum--;
@@ -113,14 +121,14 @@ public class SimpleCore extends Core {
                         boolean result = this.manageCheckOtherCache(blockLabel, true);
                         if (result){
                             this.simulation.getDataBus().unlock();
-                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
                             this.nextCycle();
                             this.remainingQuantum--;
                         }
                     }
                     else {
-                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         this.remainingQuantum--;
                         this.startOver();
@@ -136,14 +144,14 @@ public class SimpleCore extends Core {
                     boolean result = this.manageCheckOtherCache(blockLabel, true);
                     if (result){
                         this.simulation.getDataBus().unlock();
-                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
                         this.nextCycle();
                         this.remainingQuantum--;
                     }
                 }
                 else {
-                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     this.nextCycle();
                     this.remainingQuantum--;
                     this.startOver();
@@ -159,7 +167,7 @@ public class SimpleCore extends Core {
     public void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
-        if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().tryLock()){
+        if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
             if (this.dataCache.hasBlock(blockLabel)){
                 CacheStatus blockStatus = this.dataCache.getBlock(blockLabel).getBlockStatus();
                 if (blockStatus == CacheStatus.Shared){
@@ -170,7 +178,7 @@ public class SimpleCore extends Core {
                             }
                             this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
                         } else {
-                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.simulation.getDataBus().unlock();
                             this.nextCycle();
                             this.remainingQuantum--;
@@ -179,7 +187,7 @@ public class SimpleCore extends Core {
                         this.simulation.getDataBus().unlock();
                     }
                     else {
-                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         this.remainingQuantum--;
                         this.startOver();
@@ -201,13 +209,13 @@ public class SimpleCore extends Core {
                             this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
                             this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
                             this.simulation.getDataBus().unlock();
-                            this.dataCache.getBlock(blockLabel).getLock().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
                             this.remainingQuantum--;
                         }
                     }
                     else {
-                        this.dataCache.getBlock(blockLabel).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         this.remainingQuantum--;
                         this.startOver();
@@ -225,13 +233,13 @@ public class SimpleCore extends Core {
                         this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
                         this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
                         this.simulation.getDataBus().unlock();
-                        this.dataCache.getBlock(blockLabel).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         this.remainingQuantum--;
                     }
                 }
                 else {
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     this.nextCycle();
                     this.remainingQuantum--;
                     this.startOver();
@@ -292,7 +300,7 @@ public class SimpleCore extends Core {
         }
         else {
             this.simulation.getDataBus().unlock();
-            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLock().unlock();
+            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
             this.nextCycle();
             this.startOver();
             successful = false;

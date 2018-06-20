@@ -7,6 +7,7 @@ import Storage.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -37,11 +38,24 @@ public class Simulation {
         this.instructionsBus = new ReentrantLock();
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
+        this.barrier = new CyclicBarrier(2);
     }
 
     public void start(){
-        this.dualCore = new DualCore(this, this.quantum);
+        //this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
+        this.simpleCore.start();
+        while (this.simpleCore.isRunning){
+            System.out.println(this.clock);
+            ++this.clock;
+            try {
+                this.barrier.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public CyclicBarrier getBarrier() {

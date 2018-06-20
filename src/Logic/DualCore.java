@@ -137,11 +137,11 @@ public class DualCore extends Core {
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         //Preguntar si esta reservada
-        if (this.dataCache.getBlock(blockLabel).getLock().tryLock()){
+        if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
             if (this.dataCache.hasBlock(blockLabel)){
                 CacheStatus blockStatus = this.dataCache.getBlock(blockLabel).getBlockStatus();
                 if (blockStatus == CacheStatus.Modified || blockStatus == CacheStatus.Shared){
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
                     super.nextCycle();
                 }
@@ -169,17 +169,17 @@ public class DualCore extends Core {
                         }
                         else {
                             this.simulation.getDataBus().unlock();
-                            this.dataCache.getBlock(blockLabel).getLock().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
                             //TODO: start over
                         }
                     }
                     else {
-                        this.dataCache.getBlock(blockLabel).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         //TODO: start over
                     }
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
                     this.nextCycle();
                 }
@@ -215,17 +215,17 @@ public class DualCore extends Core {
                     }
                     else {
                         this.simulation.getDataBus().unlock();
-                        this.dataCache.getBlock(blockLabel).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         //TODO: start over
                     }
                 }
                 else {
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     this.nextCycle();
                     //TODO: start over
                 }
-                this.dataCache.getBlock(blockLabel).getLock().unlock();
+                this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                 context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
                 this.nextCycle();
             }
@@ -238,7 +238,7 @@ public class DualCore extends Core {
     public void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
-        if (this.dataCache.getBlock(blockLabel).getLock().tryLock()){
+        if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
             if (this.dataCache.hasBlock(blockLabel)){
                 CacheStatus blockStatus = this.dataCache.getBlock(blockLabel).getBlockStatus();
                 if (blockStatus == CacheStatus.Shared){
@@ -295,7 +295,7 @@ public class DualCore extends Core {
                         }
                         else {
                             this.simulation.getDataBus().unlock();
-                            this.dataCache.getBlock(blockLabel).getLock().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
                             //TODO: start over
                         }
@@ -304,11 +304,11 @@ public class DualCore extends Core {
                         this.nextCycle();
                     }
                     else {
-                        this.dataCache.getBlock(blockLabel).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         //TODO: start over
                     }
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
                     this.nextCycle();
                 }
@@ -345,17 +345,17 @@ public class DualCore extends Core {
                     }
                     else {
                         this.simulation.getDataBus().unlock();
-                        this.dataCache.getBlock(blockLabel).getLock().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         //TODO: start over
                     }
                 }
                 else {
-                    this.dataCache.getBlock(blockLabel).getLock().unlock();
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     this.nextCycle();
                     //TODO: start over
                 }
-                this.dataCache.getBlock(blockLabel).getLock().unlock();
+                this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                 context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
                 this.nextCycle();
             }
@@ -378,18 +378,18 @@ public class DualCore extends Core {
             }
             else {
                 if (this.simulation.getDataBus().tryLock()){
-                    if (super.dataCache.getBlock(blockLabel).getLock().tryLock()){
+                    if (super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
                         //TODO: Resolve
-                        super.dataCache.getBlock(blockLabel).getLock().unlock();
+                        super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     }
                     this.simulation.getDataBus().unlock();
                 } else {
                     this.thread1Status = ThreadStatus.Waiting;
                     while (this.thread1Status == ThreadStatus.Waiting){
                         if (this.simulation.getDataBus().tryLock()){
-                            if (super.dataCache.getBlock(blockLabel).getLock().tryLock()){
+                            if (super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
                                 //TODO: Resolve
-                                super.dataCache.getBlock(blockLabel).getLock().unlock();
+                                super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             }
                             this.simulation.getDataBus().unlock();
                         }

@@ -1,14 +1,23 @@
 package Storage;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 public class DataCache {
 
     private DataBlock[] blocks;
+    private ReentrantLock[] locks;
 
     public DataCache (int numberOfBlocks) {
         this.blocks = new DataBlock[numberOfBlocks];
+        this.locks = new ReentrantLock[numberOfBlocks];
         for (int i = 0; i < numberOfBlocks; ++i){
             this.blocks[i] = new DataBlock(-1);
+            this.locks[i] = new ReentrantLock();
         }
+    }
+
+    public ReentrantLock getLock(int i) {
+        return locks[i];
     }
 
     public DataBlock getBlock(int i) {
