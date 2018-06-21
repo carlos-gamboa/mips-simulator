@@ -46,7 +46,6 @@ public class Simulation {
         this.simpleCore = new SimpleCore(this, this.quantum);
         this.simpleCore.start();
         while (this.simpleCore.isRunning){
-            System.out.println(this.clock);
             ++this.clock;
             try {
                 this.barrier.await();
@@ -107,7 +106,7 @@ public class Simulation {
     }
 
     public boolean areMoreContexts(){
-        return this.threadQueue.isEmpty();
+        return !this.threadQueue.isEmpty();
     }
 
     public boolean tryLockDataCacheBlock(boolean isSimpleCore, int blockLabel){
