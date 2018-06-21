@@ -22,8 +22,8 @@ public class DualCore extends Core {
 
     public DualCore(Simulation simulation, int quantum){
         super(simulation, 8, false, quantum);
-        this.thread2Context = null;
         this.thread1Status = ThreadStatus.Running;
+        this.thread1Status = ThreadStatus.Null;
         this.oldestThread = 1;
         this.thread1 = new Thread(this, "Thread 1");
         this.thread2 = new Thread(this, "Thread 2");
@@ -31,13 +31,15 @@ public class DualCore extends Core {
 
     public void start(){
         this.thread1Context = super.getSimulation().getNextContext();
+        this.thread1Context.setRemainingQuantum(super.getQuantum());
+        this.thread2Context = null;
         this.thread1.start();
         this.thread2.start();
     }
 
     @Override
     public void run(){
-        if (Thread.currentThread().getName() == "Thread 1"){
+        if (Thread.currentThread().getName().equals("Thread 1")){
             this.runThread1();
         } else {
             this.runThread2();
@@ -76,44 +78,49 @@ public class DualCore extends Core {
         this.thread2Status = thread2Status;
     }
 
-    private void manageInstruction(Instruction instruction, Context context){
-        switch (instruction.getOperationCode()){
-            case 8:
-                this.manageDADDI(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 32:
-                this.manageDADD(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 34:
-                this.manageDSUB(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 12:
-                this.manageDMUL(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 14:
-                this.manageDDIV(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 4:
-                this.manageBEQZ(context, instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 5:
-                this.manageBNEZ(context, instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 3:
-                this.manageJAL(context, instruction.getImmediate());
-                break;
-            case 2:
-                this.manageJR(context, instruction.getSourceRegister());
-                break;
-            case 35:
-                this.manageLoadWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 43:
-                this.manageStoreWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
-                break;
-            case 63:
-                this.manageFIN();
-                break;
+    private void manageInstruction(Instruction instruction, Context context, boolean isThread1){
+        if (context.getRemainingQuantum() != 0){
+            switch (instruction.getOperationCode()){
+                case 8:
+                    this.manageDADDI(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    break;
+                case 32:
+                    this.manageDADD(context, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    break;
+                case 34:
+                    this.manageDSUB(context, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    break;
+                case 12:
+                    this.manageDMUL(context, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    break;
+                case 14:
+                    this.manageDDIV(context, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    break;
+                case 4:
+                    this.manageBEQZ(context, instruction.getSourceRegister(), instruction.getImmediate());
+                    break;
+                case 5:
+                    this.manageBNEZ(context, instruction.getSourceRegister(), instruction.getImmediate());
+                    break;
+                case 3:
+                    this.manageJAL(context, instruction.getImmediate());
+                    break;
+                case 2:
+                    this.manageJR(context, instruction.getSourceRegister());
+                    break;
+                case 35:
+                    this.manageLoadWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    break;
+                case 43:
+                    this.manageStoreWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    break;
+                case 63:
+                    this.manageFIN();
+                    break;
+            }
+            context.setRemainingQuantum(context.getRemainingQuantum() - 1);
+        } else {
+            this.manageQuantumEnd(isThread1);
         }
     }
 
@@ -123,13 +130,13 @@ public class DualCore extends Core {
 
     private void runThread1(){
         if (this.getThread1Status() == ThreadStatus.Running){
-            this.manageInstruction(this.getInstruction(this.thread1Context.getPc()), this.thread1Context);
+            this.manageInstruction(this.getInstruction(this.thread1Context.getPc()), this.thread1Context, true);
         }
     }
 
     private void runThread2(){
         if (this.getThread2Status() == ThreadStatus.Running){
-            this.manageInstruction(this.getInstruction(this.thread2Context.getPc()), this.thread2Context);
+            this.manageInstruction(this.getInstruction(this.thread2Context.getPc()), this.thread2Context, false);
         }
     }
 
@@ -409,6 +416,16 @@ public class DualCore extends Core {
             this.thread1Status = ThreadStatus.DataCacheFail;
         } else {
             this.thread2Status = ThreadStatus.DataCacheFail;
+        }
+    }
+
+    private void manageQuantumEnd(boolean isThread1){
+        if (isThread1){
+            super.simulation.addContext(this.thread1Context);
+            this.thread1Context = super.simulation.getNextContext();
+        } else {
+            super.simulation.addContext(this.thread2Context);
+            this.thread2Context = super.simulation.getNextContext();
         }
     }
 }
