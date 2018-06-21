@@ -15,8 +15,9 @@ public class DualCore extends Core {
     private Thread thread1;
     private Thread thread2;
 
-    //Ok se reserva antes de usar el bus
+    private int thread1ReservedPosition;
     private int thread2ReservedPosition;
+    private int busReserved;
 
     private int oldestThread;
 
@@ -25,14 +26,13 @@ public class DualCore extends Core {
         this.thread1Status = ThreadStatus.Running;
         this.thread1Status = ThreadStatus.Null;
         this.oldestThread = 1;
+        this.thread1ReservedPosition = -1;
+        this.thread2ReservedPosition = -1;
         this.thread1 = new Thread(this, "Thread 1");
         this.thread2 = new Thread(this, "Thread 2");
     }
 
     public void start(){
-        this.thread1Context = super.getSimulation().getNextContext();
-        this.thread1Context.setRemainingQuantum(super.getQuantum());
-        this.thread2Context = null;
         this.thread1.start();
         this.thread2.start();
     }
@@ -109,13 +109,13 @@ public class DualCore extends Core {
                     this.manageJR(context, instruction.getSourceRegister());
                     break;
                 case 35:
-                    this.manageLoadWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.checkReservedPosition(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate(), isThread1, true);
                     break;
                 case 43:
-                    this.manageStoreWord(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.checkReservedPosition(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate(), isThread1, false);
                     break;
                 case 63:
-                    this.manageFIN();
+                    this.manageFIN(isThread1);
                     break;
             }
             context.setRemainingQuantum(context.getRemainingQuantum() - 1);
@@ -124,130 +124,198 @@ public class DualCore extends Core {
         }
     }
 
-    public void manageFIN (){
-
+    private void manageFIN (boolean isThread1){
+        if (isThread1){
+            if (!super.simulation.areMoreContexts()){
+                if (this.thread2Status == ThreadStatus.Finished){
+                    super.setRunning(false);
+                }
+                else {
+                    this.thread1Status = ThreadStatus.Finished;
+                }
+            }
+            else {
+                this.thread1Context.setFinishingCycle(super.getClock());
+                super.simulation.addFinishedContext(this.thread1Context);
+                this.thread1Context = super.simulation.getNextContext();
+                this.thread1Context.setStartingCycle(super.getClock());
+                this.oldestThread = 2;
+                if (this.thread2Status == ThreadStatus.Waiting){
+                    this.thread2Status = ThreadStatus.Running;
+                    this.thread1Status = ThreadStatus.Waiting;
+                }
+            }
+        } else {
+            if (!super.simulation.areMoreContexts()){
+                if (this.thread1Status == ThreadStatus.Finished){
+                    super.setRunning(false);
+                }
+                else {
+                    this.thread2Status = ThreadStatus.Finished;
+                }
+            }
+            else {
+                this.thread2Context.setFinishingCycle(super.getClock());
+                super.simulation.addFinishedContext(this.thread2Context);
+                this.thread2Context = super.simulation.getNextContext();
+                this.thread2Context.setStartingCycle(super.getClock());
+                this.oldestThread = 1;
+                if (this.thread1Status == ThreadStatus.Waiting){
+                    this.thread1Status = ThreadStatus.Running;
+                    this.thread2Status = ThreadStatus.Waiting;
+                }
+            }
+        }
+        super.nextCycle();
     }
 
     private void runThread1(){
-        if (this.getThread1Status() == ThreadStatus.Running){
-            this.manageInstruction(this.getInstruction(this.thread1Context.getPc()), this.thread1Context, true);
+        this.thread1Context = super.simulation.getNextContext();
+        this.thread1Context.setRemainingQuantum(super.getQuantum());
+        this.thread1Context.setStartingCycle(super.getClock());
+        Instruction instruction;
+        while (super.isRunning){
+            while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
+                do {
+                    instruction = this.getInstruction(this.thread1Context.getPc());
+                } while (instruction == null);
+                this.thread1Context.setPc(this.thread1Context.getPc() + 4);
+                this.manageInstruction(instruction, this.thread1Context, true);
+                System.out.println("Instruction: " + instruction.toString());
+            }
         }
     }
 
     private void runThread2(){
-        if (this.getThread2Status() == ThreadStatus.Running){
-            this.manageInstruction(this.getInstruction(this.thread2Context.getPc()), this.thread2Context, false);
+        while (this.thread2Status == ThreadStatus.Null){
+            //DO NOTHING
+        }
+        this.thread2Context = super.simulation.getNextContext();
+        this.thread2Context.setRemainingQuantum(super.getQuantum());
+        this.thread2Context.setStartingCycle(super.getClock());
+        Instruction instruction;
+        while (super.isRunning) {
+            while (this.getThread1Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
+                do {
+                    instruction = this.getInstruction(this.thread2Context.getPc());
+                } while (instruction == null);
+                this.thread2Context.setPc(this.thread2Context.getPc() + 4);
+                this.manageInstruction(instruction, this.thread2Context, false);
+                System.out.println("Instruction: " + instruction.toString());
+            }
         }
     }
 
-    public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate){
+    private void checkReservedPosition(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1, boolean isLoad){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
-        int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
-        //Preguntar si esta reservada
-        if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
-            if (this.dataCache.hasBlock(blockLabel)){
-                CacheStatus blockStatus = this.dataCache.getBlock(blockLabel).getBlockStatus();
-                if (blockStatus == CacheStatus.Modified || blockStatus == CacheStatus.Shared){
-                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                    context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                    super.nextCycle();
-                }
-                else {
-                    // Se pregunta si el otro hilo esta en fallo de esa cache
-                    if (this.simulation.getDataBus().tryLock()) {
-                        if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
-                            if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
-                                DataBlock blockFromOtherCache = this.simulation.getDataBlockFromOtherCache(this.isSimpleCore, blockLabel);
-                                if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
-                                    //TODO: Copy to cache
-                                    this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
-                                    this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Shared);
-                                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                }
-                                else {
-                                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                    //TODO: Copy from memory
-                                }
-                            }
-                            else {
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy from memory
-                            }
-                        }
-                        else {
-                            this.simulation.getDataBus().unlock();
-                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                            this.nextCycle();
-                            //TODO: start over
-                        }
-                    }
-                    else {
-                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                        this.nextCycle();
-                        //TODO: start over
-                    }
-                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                    context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                    this.nextCycle();
+        if (isThread1){
+            if (this.thread2ReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
+                if (isLoad) {
+                    this.manageLoadWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                } else {
+                    this.manageStoreWord(context, destinyRegister, sourceRegister, immediate, isThread1);
                 }
             }
             else {
-                if (this.simulation.getDataBus().tryLock()) {
-                    if (this.dataCache.getBlock(blockLabel).getBlockStatus() == CacheStatus.Modified){
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(blockLabel), blockLabel);
-                        //TODO: 40 cycles
-                    }
-                    if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
-                        if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
-                            DataBlock blockFromOtherCache = this.simulation.getDataBlockFromOtherCache(this.isSimpleCore, blockLabel);
-                            if (blockFromOtherCache.getBlockStatus() == CacheStatus.Shared){
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy from memory
-                            }
-                            else if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
-                                //TODO: Copy to cache
-                                this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
-                                this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Shared);
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                            }
-                            else {
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy from memory
-                            }
-                        }
-                        else {
-                            this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                            //TODO: Copy from memory
+                this.nextCycle();
+                this.startOver(context);
+            }
+        } else {
+            if (this.thread1ReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
+                if (isLoad) {
+                    this.manageLoadWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                } else {
+                    this.manageStoreWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                }
+            }
+            else {
+                this.nextCycle();
+                this.startOver(context);
+            }
+        }
+    }
+
+    private boolean reservePosition(int blockIndex, boolean isThread1){
+        boolean reserved = false;
+        if (isThread1 && this.thread2Status != ThreadStatus.DataCacheFail && this.thread2Status != ThreadStatus.DataCacheFailRunning){
+            this.thread1Status = ThreadStatus.DataCacheFailRunning;
+            this.busReserved = 1;
+            this.thread1ReservedPosition = blockIndex;
+            reserved = true;
+        } else if (!isThread1 && this.thread1Status != ThreadStatus.DataCacheFail && this.thread1Status != ThreadStatus.DataCacheFailRunning) {
+            this.thread2Status = ThreadStatus.DataCacheFailRunning;
+            this.thread2ReservedPosition = blockIndex;
+            this.busReserved = 1;
+            reserved = true;
+        }
+        return reserved;
+    }
+
+    private void checkIfCanContinue(boolean isThread1){
+        super.nextCycle();
+    }
+
+    public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
+        int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
+        int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
+        if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
+            if (this.dataCache.hasBlock(blockLabel)){
+                CacheStatus blockStatus = this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus();
+                if (blockStatus == CacheStatus.Modified || blockStatus == CacheStatus.Shared){
+                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
+                    context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
+                    super.nextCycle();
+                }
+                else {
+                    if (this.reservePosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
+                        boolean result = this.manageCheckOtherCache(blockLabel, true, context, isThread1);
+                        if (result){
+                            this.checkIfCanContinue(isThread1);
+                            this.simulation.getDataBus().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
+                            context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
+                            this.nextCycle();
                         }
                     }
                     else {
-                        this.simulation.getDataBus().unlock();
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
-                        //TODO: start over
+                        this.startOver(context);
+                    }
+                }
+            }
+            else {
+                if (this.reservePosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
+                    if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
+                        this.manageDataCacheFail(isThread1, blockLabel);
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                    }
+                    boolean result = this.manageCheckOtherCache(blockLabel, true, context, isThread1);
+                    if (result){
+                        this.simulation.getDataBus().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
+                        context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
+                        this.nextCycle();
                     }
                 }
                 else {
                     this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     this.nextCycle();
-                    //TODO: start over
+                    this.startOver(context);
                 }
-                this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                this.nextCycle();
             }
         } else {
             this.nextCycle();
-            //TODO: start over
+            this.startOver(context);
         }
     }
 
-    public void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate){
+    public void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
             if (this.dataCache.hasBlock(blockLabel)){
-                CacheStatus blockStatus = this.dataCache.getBlock(blockLabel).getBlockStatus();
+                CacheStatus blockStatus = this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus();
                 if (blockStatus == CacheStatus.Shared){
                     if (this.simulation.getDataBus().tryLock()) {
                         if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)) {
@@ -256,163 +324,148 @@ public class DualCore extends Core {
                             }
                             this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
                         } else {
-                            this.nextCycle();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.simulation.getDataBus().unlock();
-                            //TODO: Start again
+                            this.nextCycle();
+                            this.startOver(context);
                         }
                         this.simulation.getDataBus().unlock();
                     }
                     else {
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
-                        //TODO: Start again
+                        this.startOver(context);
                     }
-                    this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
-                    this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
+                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
                     this.nextCycle();
                 }
                 else if (blockStatus == CacheStatus.Modified){
-                    this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
+                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
                     this.nextCycle();
                 }
                 else {
                     if (this.simulation.getDataBus().tryLock()) {
-                        if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
-                            if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
-                                DataBlock blockFromOtherCache = this.simulation.getDataBlockFromOtherCache(this.isSimpleCore, blockLabel);
-                                if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
-                                    //TODO: Copy to cache
-                                    this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
-                                    this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
-                                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                }
-                                else if (blockFromOtherCache.getBlockStatus() == CacheStatus.Shared){
-                                    this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
-                                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                    //TODO: Copy to cache
-                                }
-                                else {
-                                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                    //TODO: Copy from memory
-                                }
-                            }
-                            else {
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy from memory
-                            }
-                        }
-                        else {
+                        boolean result = this.manageCheckOtherCache(blockLabel, false, context, isThread1);
+                        if (result){
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
                             this.simulation.getDataBus().unlock();
                             this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
-                            //TODO: start over
                         }
-                        this.dataCache.getBlock(blockLabel).setData(blockWord, context.getRegister(destinyRegister));
-                        this.dataCache.getBlock(blockLabel).setBlockStatus(CacheStatus.Modified);
-                        this.nextCycle();
                     }
                     else {
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
-                        //TODO: start over
+                        this.startOver(context);
                     }
-                    this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                    context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                    this.nextCycle();
                 }
             }
             else {
                 if (this.simulation.getDataBus().tryLock()) {
-                    if (this.dataCache.getBlock(blockLabel).getBlockStatus() == CacheStatus.Modified){
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(blockLabel), blockLabel);
-                        //TODO: 40 cycles
+                    if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
+                        this.manageDataCacheFail(isThread1, blockLabel);
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
                     }
-                    if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
-                        if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
-                            DataBlock blockFromOtherCache = this.simulation.getDataBlockFromOtherCache(this.isSimpleCore, blockLabel);
-                            if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
-                                //TODO: Copy to cache
-                                this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
-                                this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                            }
-                            else if (blockFromOtherCache.getBlockStatus() == CacheStatus.Shared){
-                                this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy to cache
-                            }
-                            else {
-                                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                                //TODO: Copy from memory
-                            }
-                        }
-                        else {
-                            this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                            //TODO: Copy from memory
-                        }
-                    }
-                    else {
+                    boolean result = this.manageCheckOtherCache(blockLabel, false, context, isThread1);
+                    if (result){
+                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                        this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
                         this.simulation.getDataBus().unlock();
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
-                        //TODO: start over
                     }
                 }
                 else {
                     this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     this.nextCycle();
-                    //TODO: start over
+                    this.startOver(context);
                 }
-                this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                context.setRegister(destinyRegister, this.dataCache.getBlock(blockLabel).getData(blockWord));
-                this.nextCycle();
             }
         } else {
             this.nextCycle();
-            //TODO: start over
+            this.startOver(context);
         }
     }
 
-    public void manageDataCacheFail(Context context, int blockLabel){
-        if (this.thread1Context == context){
-            this.thread1Status = ThreadStatus.DataCacheFail;
-            // If there's not another thread
-            if (this.thread2Context == null){
-                this.thread2Context = this.simulation.getNextContext();
-                this.thread2Status = ThreadStatus.Running;
-                for (int i = 0; i < 40; ++i){
-                    super.nextCycle();
+    private void startOver(Context context){
+        context.setPc(context.getPc() + 4);
+    }
+
+    private boolean manageCheckOtherCache(int blockLabel, boolean isLoad, Context context, boolean isThread1){
+        boolean successful = true;
+        if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
+            if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
+                DataBlock blockFromOtherCache = this.simulation.getDataBlockFromOtherCache(this.isSimpleCore, blockLabel);
+                if (blockFromOtherCache.getBlockStatus() == CacheStatus.Shared){
+                    if (!isLoad){
+                        this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
+                    }
+                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
+                    this.manageDataCacheFail(isThread1, blockLabel);
+                    super.copyFromMemoryToDataCache(blockLabel);
+                    this.manageDataCacheSolved(isThread1);
+                }
+                else if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
+                    this.manageDataCacheFail(isThread1, blockLabel);
+                    this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
+                    super.copyFromMemoryToDataCache(blockLabel);
+                    if (isLoad){
+                        this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Shared);
+                    } else {
+                        this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
+                    }
+                    this.manageDataCacheSolved(isThread1);
+                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
+                }
+                else {
+                    this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
+                    this.manageDataCacheFail(isThread1, blockLabel);
+                    super.copyFromMemoryToDataCache(blockLabel);
+                    this.manageDataCacheSolved(isThread1);
                 }
             }
             else {
-                if (this.simulation.getDataBus().tryLock()){
-                    if (super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
-                        //TODO: Resolve
-                        super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                    }
-                    this.simulation.getDataBus().unlock();
-                } else {
-                    this.thread1Status = ThreadStatus.Waiting;
-                    while (this.thread1Status == ThreadStatus.Waiting){
-                        if (this.simulation.getDataBus().tryLock()){
-                            if (super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
-                                //TODO: Resolve
-                                super.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
-                            }
-                            this.simulation.getDataBus().unlock();
-                        }
-                    }
+                this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
+                this.manageDataCacheFail(isThread1, blockLabel);
+                super.copyFromMemoryToDataCache(blockLabel);
+                this.manageDataCacheSolved(isThread1);
+            }
+        }
+        else {
+            this.simulation.getDataBus().unlock();
+            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
+            this.nextCycle();
+            this.startOver(context);
+            successful = false;
+        }
+        return successful;
+    }
 
-                }
+    public void manageDataCacheFail(boolean isThread1, int blockLabel){
+        if (isThread1){
+            this.thread1Status = ThreadStatus.DataCacheFail;
+            if (this.thread2Status == ThreadStatus.Null){
+                this.thread2Status = ThreadStatus.Running;
+
+            }
+            else if(this.thread2Status == ThreadStatus.Waiting){
+                this.thread2Status = ThreadStatus.Running;
             }
         } else {
             this.thread2Status = ThreadStatus.DataCacheFail;
+            if(this.thread1Status == ThreadStatus.Waiting){
+                this.thread1Status = ThreadStatus.Running;
+            }
         }
-
-        this.manageDataCacheSolved(context);
+        for (int i = 0; i < 40; ++i){
+            super.nextCycle();
+        }
     }
 
-    public void manageDataCacheSolved(Context context){
-        if (this.thread1Context == context){
+    public void manageDataCacheSolved(boolean isThread1){
+        if (isThread1){
             this.thread1Status = ThreadStatus.DataCacheFail;
         } else {
             this.thread2Status = ThreadStatus.DataCacheFail;

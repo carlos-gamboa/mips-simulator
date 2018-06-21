@@ -4,6 +4,9 @@ public enum ThreadStatus {
     Running,
     Waiting,
     DataCacheFail,
+    DataCacheFailRunning,
     InstructionCacheFail,
-    Null
+    InstructionCacheFailRunning,
+    Null,
+    Finished
 }
