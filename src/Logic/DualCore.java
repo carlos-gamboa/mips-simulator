@@ -521,8 +521,8 @@ public class DualCore extends Core {
                         this.manageInstructionCacheFail(isThread1, blockLabel);
                         this.copyFromMemoryToInstructionCache(blockLabel);
                         this.instructionCache.getLock(cacheIndex).unlock();
-                        this.checkIfCanContinueInstruction(isThread1);
                         this.simulation.getInstructionsBus().unlock();
+                        this.checkIfCanContinueInstruction(isThread1);
                         block = this.instructionCache.getBlock(cacheIndex);
                         instruction = block.getValue(blockWord);
                     }
