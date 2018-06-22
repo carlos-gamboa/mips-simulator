@@ -24,7 +24,7 @@ public class DualCore extends Core {
     public DualCore(Simulation simulation, int quantum){
         super(simulation, 8, false, quantum);
         this.thread1Status = ThreadStatus.Running;
-        this.thread1Status = ThreadStatus.Null;
+        this.thread2Status = ThreadStatus.Null;
         this.oldestThread = 1;
         this.thread1DataReservedPosition = -1;
         this.thread2DataReservedPosition = -1;
@@ -178,6 +178,7 @@ public class DualCore extends Core {
         Instruction instruction;
         while (super.isRunning){
             while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
+                System.out.println("aca1");
                 do {
                     instruction = this.getInstruction(this.thread1Context.getPc(), true);
                 } while (instruction == null);
@@ -197,7 +198,8 @@ public class DualCore extends Core {
         this.thread2Context.setStartingCycle(super.getClock());
         Instruction instruction;
         while (super.isRunning) {
-            while (this.getThread1Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
+            while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
+                System.out.println("aca2");
                 do {
                     instruction = this.getInstruction(this.thread2Context.getPc(), false);
                 } while (instruction == null);
@@ -299,9 +301,9 @@ public class DualCore extends Core {
                     if (this.reservePosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                         boolean result = this.manageCheckOtherCache(blockLabel, true, context, isThread1);
                         if (result){
-                            this.checkIfCanContinueData(isThread1);
                             this.simulation.getDataBus().unlock();
                             this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
+                            this.checkIfCanContinueData(isThread1);
                             context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
                             this.nextCycle();
                         }
@@ -321,9 +323,9 @@ public class DualCore extends Core {
                     }
                     boolean result = this.manageCheckOtherCache(blockLabel, true, context, isThread1);
                     if (result){
-                        this.checkIfCanContinueData(isThread1);
                         this.simulation.getDataBus().unlock();
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
+                        this.checkIfCanContinueData(isThread1);
                         context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
                         this.nextCycle();
                     }
@@ -378,11 +380,11 @@ public class DualCore extends Core {
                     if (this.simulation.getDataBus().tryLock()) {
                         boolean result = this.manageCheckOtherCache(blockLabel, false, context, isThread1);
                         if (result){
+                            this.simulation.getDataBus().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.checkIfCanContinueData(isThread1);
                             this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
                             this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
-                            this.simulation.getDataBus().unlock();
-                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
                         }
                     }
@@ -401,11 +403,11 @@ public class DualCore extends Core {
                     }
                     boolean result = this.manageCheckOtherCache(blockLabel, false, context, isThread1);
                     if (result){
+                        this.simulation.getDataBus().unlock();
+                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.checkIfCanContinueData(isThread1);
                         this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
                         this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
-                        this.simulation.getDataBus().unlock();
-                        this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                     }
                 }
@@ -518,11 +520,11 @@ public class DualCore extends Core {
                     {
                         this.manageInstructionCacheFail(isThread1, blockLabel);
                         this.copyFromMemoryToInstructionCache(blockLabel);
+                        this.instructionCache.getLock(cacheIndex).unlock();
                         this.checkIfCanContinueInstruction(isThread1);
                         this.simulation.getInstructionsBus().unlock();
                         block = this.instructionCache.getBlock(cacheIndex);
                         instruction = block.getValue(blockWord);
-                        this.instructionCache.getLock(cacheIndex).unlock();
                     }
                     else
                     {
@@ -535,6 +537,7 @@ public class DualCore extends Core {
                     block = this.instructionCache.getBlock(cacheIndex);
                     instruction = block.getValue(blockWord);
                     this.instructionCache.getLock(cacheIndex).unlock();
+                    this.nextCycle();
                 }
             }
         }
@@ -566,7 +569,6 @@ public class DualCore extends Core {
             this.thread1Status = ThreadStatus.InstructionCacheFail;
             if (this.thread2Status == ThreadStatus.Null){
                 this.thread2Status = ThreadStatus.Running;
-
             }
             else if(this.thread2Status == ThreadStatus.Waiting){
                 this.thread2Status = ThreadStatus.Running;
@@ -591,9 +593,9 @@ public class DualCore extends Core {
                 if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.DataCacheFailRunning || this.thread2Status == ThreadStatus.InstructionCacheFailRunning){
                     this.thread2Status = ThreadStatus.Waiting;
                 }
-                super.nextCycle();
+                //super.nextCycle();
             } else {
-                while (this.thread1Status != ThreadStatus.Running){
+                while (this.thread1Status != ThreadStatus.Running && this.thread1Status != ThreadStatus.DataCacheFailRunning && this.thread1Status != ThreadStatus.InstructionCacheFailRunning){
                     super.nextCycle();
                 }
             }
@@ -604,9 +606,9 @@ public class DualCore extends Core {
                 if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.DataCacheFailRunning || this.thread1Status == ThreadStatus.InstructionCacheFailRunning){
                     this.thread1Status = ThreadStatus.Waiting;
                 }
-                super.nextCycle();
+                //super.nextCycle();
             } else {
-                while (this.thread2Status != ThreadStatus.Running){
+                while (this.thread2Status != ThreadStatus.Running && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.thread2Status != ThreadStatus.InstructionCacheFailRunning){
                     super.nextCycle();
                 }
             }

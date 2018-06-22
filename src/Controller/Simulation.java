@@ -44,7 +44,8 @@ public class Simulation {
     public void start(){
         this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
-        this.simpleCore.start();
+        this.dualCore.start();
+        //this.simpleCore.start();
         while (this.simpleCore.isRunning){
             ++this.clock;
             try {
