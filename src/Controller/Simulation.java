@@ -38,7 +38,7 @@ public class Simulation {
         this.instructionsBus = new ReentrantLock();
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
-        this.barrier = new CyclicBarrier(2);
+        this.barrier = new CyclicBarrier(3);
     }
 
     public void start(){
@@ -46,7 +46,7 @@ public class Simulation {
         this.simpleCore = new SimpleCore(this, this.quantum);
         this.dualCore.start();
         //this.simpleCore.start();
-        while (this.simpleCore.isRunning){
+        while (this.dualCore.isRunning){
             ++this.clock;
             try {
                 this.barrier.await();
@@ -56,7 +56,6 @@ public class Simulation {
                 e.printStackTrace();
             }
         }
-        System.out.println("salio");
     }
 
     public CyclicBarrier getBarrier() {

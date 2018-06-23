@@ -18,6 +18,7 @@ public class Core implements Runnable {
     public int clock;
     public boolean isRunning;
     public int quantum;
+    public boolean tick;
 
     public Core (Simulation simulation, int numberOfBlocks, boolean isSimpleCore, int quantum) {
         this.simulation = simulation;
@@ -27,6 +28,7 @@ public class Core implements Runnable {
         this.clock = 0;
         this.isSimpleCore = isSimpleCore;
         this.isRunning = true;
+        this.tick = false;
     }
 
     public void run(){
@@ -90,7 +92,16 @@ public class Core implements Runnable {
     }
 
     public void nextCycle(){
-        this.clock++;
+        if (!this.isSimpleCore){
+            if (this.tick){
+                this.clock++;
+                this.tick = false;
+            } else {
+                this.tick = true;
+            }
+        } else {
+            this.clock++;
+        }
         try {
             this.simulation.getBarrier().await();
         } catch (InterruptedException e) {
