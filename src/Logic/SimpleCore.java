@@ -22,10 +22,15 @@ public class SimpleCore extends Core {
 
     @Override
     public void run(){
-        this.threadContext = super.simulation.getNextContext();
-        this.threadContext.setRemainingQuantum(super.getQuantum());
-        this.threadContext.setStartingCycle(super.getClock());
         Instruction instruction;
+        if (super.simulation.areMoreContexts()) {
+            this.threadContext = super.simulation.getNextContext();
+            this.threadContext.setRemainingQuantum(super.getQuantum());
+            this.threadContext.setStartingCycle(super.getClock());
+        }
+        else {
+            super.setRunning(false);
+        }
         while (super.isRunning()){
             do {
                 instruction = this.getInstruction(this.threadContext.getPc());
@@ -33,6 +38,9 @@ public class SimpleCore extends Core {
             this.threadContext.setPc(this.threadContext.getPc() + 4);
             this.manageInstruction(instruction);
             System.out.println("Instruction: " + instruction.toString());
+        }
+        while(super.simulation.isOtherCoreRunning(super.isSimpleCore)){
+            this.nextCycle();
         }
     }
 
@@ -45,12 +53,12 @@ public class SimpleCore extends Core {
     }
 
     public void manageFIN (){
+        this.threadContext.setFinishingCycle(super.getClock());
+        super.simulation.addFinishedContext(this.threadContext);
         if (!super.simulation.areMoreContexts()){
             super.setRunning(false);
         }
         else {
-            this.threadContext.setFinishingCycle(super.getClock());
-            super.simulation.addFinishedContext(this.threadContext);
             this.threadContext = super.simulation.getNextContext();
             this.threadContext.setStartingCycle(super.getClock());
         }
@@ -293,7 +301,10 @@ public class SimpleCore extends Core {
     }
 
     private void manageQuantumEnd(){
+        this.threadContext.setPc(this.threadContext.getPc() - 4);
         super.simulation.addContext(this.threadContext);
         this.threadContext = super.simulation.getNextContext();
+        this.threadContext.setStartingCycle(super.clock);
+        this.threadContext.setRemainingQuantum(super.quantum);
     }
 }

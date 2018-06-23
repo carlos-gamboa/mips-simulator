@@ -23,7 +23,6 @@ public class DualCore extends Core {
     private int instructionBusReserved;
 
     private int oldestThread;
-    private CyclicBarrier doubleBarrier;
 
     public DualCore(Simulation simulation, int quantum){
         super(simulation, 8, false, quantum);
@@ -34,7 +33,6 @@ public class DualCore extends Core {
         this.thread2DataReservedPosition = -1;
         this.thread1InstructionReservedPosition = -1;
         this.thread2InstructionReservedPosition = -1;
-        this.doubleBarrier = new CyclicBarrier(2);
         this.thread1 = new Thread(this, "Thread 1");
         this.thread2 = new Thread(this, "Thread 2");
     }
@@ -85,6 +83,71 @@ public class DualCore extends Core {
         this.thread2Status = thread2Status;
     }
 
+    private void runThread1(){
+        Instruction instruction;
+        if (super.simulation.areMoreContexts()) {
+            this.thread1Context = super.simulation.getNextContext();
+            this.thread1Context.setRemainingQuantum(super.getQuantum());
+            this.thread1Context.setStartingCycle(super.getClock());
+        }
+        else {
+            this.thread1Status = ThreadStatus.Finished;
+            this.thread2Status = ThreadStatus.Finished;
+            super.setRunning(false);
+        }
+        while (this.thread1Status != ThreadStatus.Finished){
+            while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
+                //TODO: Check instruction reserved position.
+                instruction = this.getInstruction(this.thread1Context.getPc(), true);
+                if (instruction != null) {
+                    this.thread1Context.setPc(this.thread1Context.getPc() + 4);
+                    this.manageInstruction(instruction, this.thread1Context, true);
+                    System.out.println("Instruction1: " + instruction.toString());
+                    System.out.println(super.clock);
+                }
+            }
+            if (super.isRunning) {
+                this.nextCycle();
+            }
+        }
+        while(super.isRunning || super.simulation.isOtherCoreRunning(super.isSimpleCore)){
+            this.nextCycle();
+        }
+    }
+
+    private void runThread2(){
+        Instruction instruction;
+        while (this.thread2Status == ThreadStatus.Null){
+            //DO NOTHING
+        }
+        if (super.simulation.areMoreContexts()) {
+            this.thread2Context = super.simulation.getNextContext();
+            this.thread2Context.setRemainingQuantum(super.getQuantum());
+            this.thread2Context.setStartingCycle(super.getClock());
+        } else {
+            this.thread2Status = ThreadStatus.Finished;
+        }
+        while (this.thread2Status != ThreadStatus.Finished) {
+            while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
+                //TODO: Check instruction reserved position.
+                instruction = this.getInstruction(this.thread2Context.getPc(), false);
+                if (instruction != null) {
+                    this.thread2Context.setPc(this.thread2Context.getPc() + 4);
+                    this.manageInstruction(instruction, this.thread2Context, false);
+                    System.out.println("Instruction2: " + instruction.toString());
+                    System.out.println(super.clock);
+                }
+            }
+            if (super.isRunning) {
+                this.nextCycle();
+            }
+        }
+        while(super.isRunning){
+            this.nextCycle();
+        }
+        System.out.println("salio");
+    }
+
     private void manageInstruction(Instruction instruction, Context context, boolean isThread1){
         if (context.getRemainingQuantum() != 0){
             switch (instruction.getOperationCode()){
@@ -131,18 +194,10 @@ public class DualCore extends Core {
         }
     }
 
-    private void doubleBarrierAwait(){
-        try {
-            this.doubleBarrier.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
-            e.printStackTrace();
-        }
-    }
-
     private void manageFIN (boolean isThread1){
         if (isThread1){
+            this.thread1Context.setFinishingCycle(super.getClock());
+            super.simulation.addFinishedContext(this.thread1Context);
             if (!super.simulation.areMoreContexts()){
                 if (this.thread2Status == ThreadStatus.Finished){
                     super.setRunning(false);
@@ -156,8 +211,6 @@ public class DualCore extends Core {
                 }
             }
             else {
-                this.thread1Context.setFinishingCycle(super.getClock());
-                super.simulation.addFinishedContext(this.thread1Context);
                 this.thread1Context = super.simulation.getNextContext();
                 this.thread1Context.setStartingCycle(super.getClock());
                 this.oldestThread = 2;
@@ -167,6 +220,8 @@ public class DualCore extends Core {
                 }
             }
         } else {
+            this.thread2Context.setFinishingCycle(super.getClock());
+            super.simulation.addFinishedContext(this.thread2Context);
             if (!super.simulation.areMoreContexts()){
                 if (this.thread1Status == ThreadStatus.Finished){
                     super.setRunning(false);
@@ -180,8 +235,6 @@ public class DualCore extends Core {
                 }
             }
             else {
-                this.thread2Context.setFinishingCycle(super.getClock());
-                super.simulation.addFinishedContext(this.thread2Context);
                 this.thread2Context = super.simulation.getNextContext();
                 this.thread2Context.setStartingCycle(super.getClock());
                 this.oldestThread = 1;
@@ -192,158 +245,6 @@ public class DualCore extends Core {
             }
         }
         super.nextCycle();
-    }
-
-    private void runThread1(){
-        this.thread1Context = super.simulation.getNextContext();
-        this.thread1Context.setRemainingQuantum(super.getQuantum());
-        this.thread1Context.setStartingCycle(super.getClock());
-        Instruction instruction;
-        while (this.thread1Status != ThreadStatus.Finished){
-            while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
-                instruction = this.getInstruction(this.thread1Context.getPc(), true);
-                if (instruction != null) {
-                    this.thread1Context.setPc(this.thread1Context.getPc() + 4);
-                    this.manageInstruction(instruction, this.thread1Context, true);
-                    System.out.println("Instruction1: " + instruction.toString());
-                    System.out.println(super.clock);
-                }
-            }
-            if (super.isRunning) {
-                this.nextCycle();
-            }
-        }
-        while(super.isRunning){
-            this.nextCycle();
-        }
-    }
-
-    private void runThread2(){
-        while (this.thread2Status == ThreadStatus.Null){
-            //DO NOTHING
-        }
-        this.thread2Context = super.simulation.getNextContext();
-        this.thread2Context.setRemainingQuantum(super.getQuantum());
-        this.thread2Context.setStartingCycle(super.getClock());
-        Instruction instruction;
-        while (this.thread2Status != ThreadStatus.Finished) {
-            while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
-                instruction = this.getInstruction(this.thread2Context.getPc(), false);
-                if (instruction != null) {
-                    this.thread2Context.setPc(this.thread2Context.getPc() + 4);
-                    this.manageInstruction(instruction, this.thread2Context, false);
-                    System.out.println("Instruction2: " + instruction.toString());
-                    System.out.println(super.clock);
-                }
-            }
-            if (super.isRunning) {
-                this.nextCycle();
-            }
-        }
-        while(super.isRunning){
-            this.nextCycle();
-        }
-        System.out.println("salio");
-    }
-
-    private void checkReservedPosition(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1, boolean isLoad){
-        int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
-        if (isThread1){
-            if (this.thread2DataReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
-                if (isLoad) {
-                    this.manageLoadWord(context, destinyRegister, sourceRegister, immediate, isThread1);
-                } else {
-                    this.manageStoreWord(context, destinyRegister, sourceRegister, immediate, isThread1);
-                }
-            }
-            else {
-                this.nextCycle();
-                this.startOver(context);
-            }
-        } else {
-            if (this.thread1DataReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
-                if (isLoad) {
-                    this.manageLoadWord(context, destinyRegister, sourceRegister, immediate, isThread1);
-                } else {
-                    this.manageStoreWord(context, destinyRegister, sourceRegister, immediate, isThread1);
-                }
-            }
-            else {
-                this.nextCycle();
-                this.startOver(context);
-            }
-        }
-    }
-
-    private boolean reservePosition(int blockIndex, boolean isThread1){
-        boolean reserved = false;
-        if (isThread1 && this.thread2Status != ThreadStatus.DataCacheFail && this.thread2Status != ThreadStatus.DataCacheFailRunning){
-            this.thread1Status = ThreadStatus.DataCacheFailRunning;
-            this.dataBusReserved = 1;
-            this.thread1DataReservedPosition = blockIndex;
-            reserved = true;
-        } else if (!isThread1 && this.thread1Status != ThreadStatus.DataCacheFail && this.thread1Status != ThreadStatus.DataCacheFailRunning) {
-            this.thread2Status = ThreadStatus.DataCacheFailRunning;
-            this.thread2DataReservedPosition = blockIndex;
-            this.dataBusReserved = 1;
-            reserved = true;
-        }
-        return reserved;
-    }
-
-    private void checkIfCanContinueData(boolean isThread1){
-        if (isThread1){
-            if (this.thread2Status == ThreadStatus.Finished){
-                this.thread1Status = ThreadStatus.Running;
-                this.thread1InstructionReservedPosition = -1;
-                this.dataBusReserved = 0;
-            } else {
-                this.thread1DataReservedPosition = -1;
-                this.dataBusReserved = 0;
-                if (this.thread2Status == ThreadStatus.DataCacheFail || this.thread2Status == ThreadStatus.InstructionCacheFail) {
-                    this.thread1Status = ThreadStatus.Running;
-                } else {
-                    if (this.oldestThread == 1) {
-                        if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.DataCacheFailRunning || this.thread2Status == ThreadStatus.InstructionCacheFailRunning || this.thread2Status == ThreadStatus.Waiting) {
-                            this.thread2Status = ThreadStatus.Waiting;
-                            this.thread1Status = ThreadStatus.Running;
-                        }
-                        //super.nextCycle();
-                    } else {
-                        this.thread1Status = ThreadStatus.Waiting;
-                        while (this.thread1Status != ThreadStatus.Running && this.thread1Status != ThreadStatus.DataCacheFailRunning && this.thread1Status != ThreadStatus.InstructionCacheFailRunning) {
-                            super.nextCycle();
-                        }
-                    }
-
-                }
-            }
-        } else {
-            if (this.thread1Status == ThreadStatus.Finished){
-                this.thread2Status = ThreadStatus.Running;
-                this.thread2InstructionReservedPosition = -1;
-                this.dataBusReserved = 0;
-            } else {
-                this.thread2DataReservedPosition = -1;
-                this.dataBusReserved = 0;
-                if (this.thread1Status == ThreadStatus.DataCacheFail || this.thread1Status == ThreadStatus.InstructionCacheFail) {
-                    this.thread2Status = ThreadStatus.Running;
-                } else {
-                    if (this.oldestThread == 2) {
-                        if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.DataCacheFailRunning || this.thread1Status == ThreadStatus.InstructionCacheFailRunning || this.thread1Status == ThreadStatus.Waiting) {
-                            this.thread1Status = ThreadStatus.Waiting;
-                            this.thread2Status = ThreadStatus.Running;
-                        }
-                        //super.nextCycle();
-                    } else {
-                        this.thread2Status = ThreadStatus.Waiting;
-                        while (this.thread2Status != ThreadStatus.Running && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.thread2Status != ThreadStatus.InstructionCacheFailRunning) {
-                            super.nextCycle();
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
@@ -555,6 +456,106 @@ public class DualCore extends Core {
         }
         for (int i = 0; i < 40; ++i){
             super.nextCycle();
+        }
+    }
+
+    private void checkReservedPosition(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1, boolean isLoad){
+        int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
+        if (isThread1){
+            if (this.thread2DataReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
+                if (isLoad) {
+                    this.manageLoadWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                } else {
+                    this.manageStoreWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                }
+            }
+            else {
+                this.nextCycle();
+                this.startOver(context);
+            }
+        } else {
+            if (this.thread1DataReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
+                if (isLoad) {
+                    this.manageLoadWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                } else {
+                    this.manageStoreWord(context, destinyRegister, sourceRegister, immediate, isThread1);
+                }
+            }
+            else {
+                this.nextCycle();
+                this.startOver(context);
+            }
+        }
+    }
+
+    private boolean reservePosition(int blockIndex, boolean isThread1){
+        boolean reserved = false;
+        if (isThread1 && this.thread2Status != ThreadStatus.DataCacheFail && this.thread2Status != ThreadStatus.DataCacheFailRunning){
+            this.thread1Status = ThreadStatus.DataCacheFailRunning;
+            this.dataBusReserved = 1;
+            this.thread1DataReservedPosition = blockIndex;
+            reserved = true;
+        } else if (!isThread1 && this.thread1Status != ThreadStatus.DataCacheFail && this.thread1Status != ThreadStatus.DataCacheFailRunning) {
+            this.thread2Status = ThreadStatus.DataCacheFailRunning;
+            this.thread2DataReservedPosition = blockIndex;
+            this.dataBusReserved = 1;
+            reserved = true;
+        }
+        return reserved;
+    }
+
+    private void checkIfCanContinueData(boolean isThread1){
+        if (isThread1){
+            if (this.thread2Status == ThreadStatus.Finished){
+                this.thread1Status = ThreadStatus.Running;
+                this.thread1InstructionReservedPosition = -1;
+                this.dataBusReserved = 0;
+            } else {
+                this.thread1DataReservedPosition = -1;
+                this.dataBusReserved = 0;
+                if (this.thread2Status == ThreadStatus.DataCacheFail || this.thread2Status == ThreadStatus.InstructionCacheFail) {
+                    this.thread1Status = ThreadStatus.Running;
+                } else {
+                    if (this.oldestThread == 1) {
+                        if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.DataCacheFailRunning || this.thread2Status == ThreadStatus.InstructionCacheFailRunning || this.thread2Status == ThreadStatus.Waiting) {
+                            this.thread2Status = ThreadStatus.Waiting;
+                            this.thread1Status = ThreadStatus.Running;
+                        }
+                        //super.nextCycle();
+                    } else {
+                        this.thread1Status = ThreadStatus.Waiting;
+                        while (this.thread1Status != ThreadStatus.Running && this.thread1Status != ThreadStatus.DataCacheFailRunning && this.thread1Status != ThreadStatus.InstructionCacheFailRunning) {
+                            super.nextCycle();
+                        }
+                    }
+
+                }
+            }
+        } else {
+            if (this.thread1Status == ThreadStatus.Finished){
+                this.thread2Status = ThreadStatus.Running;
+                this.thread2InstructionReservedPosition = -1;
+                this.dataBusReserved = 0;
+            } else {
+                this.thread2DataReservedPosition = -1;
+                this.dataBusReserved = 0;
+                if (this.thread1Status == ThreadStatus.DataCacheFail || this.thread1Status == ThreadStatus.InstructionCacheFail) {
+                    this.thread2Status = ThreadStatus.Running;
+                } else {
+                    if (this.oldestThread == 2) {
+                        if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.DataCacheFailRunning || this.thread1Status == ThreadStatus.InstructionCacheFailRunning || this.thread1Status == ThreadStatus.Waiting) {
+                            this.thread1Status = ThreadStatus.Waiting;
+                            this.thread2Status = ThreadStatus.Running;
+                        }
+                        //super.nextCycle();
+                    } else {
+                        this.thread2Status = ThreadStatus.Waiting;
+                        while (this.thread2Status != ThreadStatus.Running && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.thread2Status != ThreadStatus.InstructionCacheFailRunning) {
+                            super.nextCycle();
+                        }
+                    }
+                }
+            }
         }
     }
 

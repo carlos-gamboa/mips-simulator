@@ -41,23 +41,6 @@ public class Simulation {
         this.barrier = new CyclicBarrier(3);
     }
 
-    public void start(){
-        this.dualCore = new DualCore(this, this.quantum);
-        this.simpleCore = new SimpleCore(this, this.quantum);
-        this.dualCore.start();
-        //this.simpleCore.start();
-        while (this.dualCore.isRunning){
-            ++this.clock;
-            try {
-                this.barrier.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (BrokenBarrierException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     public CyclicBarrier getBarrier() {
         return this.barrier;
     }
@@ -124,46 +107,6 @@ public class Simulation {
         this.threadQueue = threadQueue;
     }
 
-    public DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
-        if (isSimpleCore){
-            return this.dualCore.getDataCache().getBlock(blockLabel);
-        }
-        else {
-            return this.simpleCore.getDataCache().getBlock(blockLabel);
-        }
-    }
-
-    public boolean checkDataBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
-        if (isSimpleCore){
-            return this.dualCore.getDataCache().hasBlock(blockLabel);
-        }
-        else {
-            return this.simpleCore.getDataCache().hasBlock(blockLabel);
-        }
-    }
-
-    public void changeDataBlockStatusFromOtherCache(boolean isSimpleCore, int blockLabel, CacheStatus status){
-        if (isSimpleCore){
-            this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
-        }
-        else {
-            this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
-        }
-    }
-
-    public void saveDataBlockToMainMemory(DataBlock block, int label){
-        this.mainMemory.setDataBlock(block, label);
-    }
-
-    public void invalidateBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
-        if (isSimpleCore){
-            this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
-        }
-        else {
-            this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
-        }
-    }
-
     public int getQuantum() {
         return quantum;
     }
@@ -178,6 +121,23 @@ public class Simulation {
 
     public void setSlowMode(boolean slowMode) {
         this.slowMode = slowMode;
+    }
+
+    public void start(){
+        this.dualCore = new DualCore(this, this.quantum);
+        this.simpleCore = new SimpleCore(this, this.quantum);
+        this.dualCore.start();
+        this.simpleCore.start();
+        while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
+            ++this.clock;
+            try {
+                this.barrier.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void addInstructionsToMemory(ArrayList<Instruction> instructions){
@@ -232,6 +192,55 @@ public class Simulation {
             int memoryAddress = 384 + (threadStartingPoint[i] * 4);
             context.setPc(memoryAddress);
             threadQueue.addLast(context);
+        }
+    }
+
+    public DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
+        if (isSimpleCore){
+            return this.dualCore.getDataCache().getBlock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel));
+        }
+        else {
+            return this.simpleCore.getDataCache().getBlock(this.simpleCore.getDataCache().calculateIndexByLabel(blockLabel));
+        }
+    }
+
+    public boolean checkDataBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
+        if (isSimpleCore){
+            return this.dualCore.getDataCache().hasBlock(blockLabel);
+        }
+        else {
+            return this.simpleCore.getDataCache().hasBlock(blockLabel);
+        }
+    }
+
+    public void changeDataBlockStatusFromOtherCache(boolean isSimpleCore, int blockLabel, CacheStatus status){
+        if (isSimpleCore){
+            this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
+        }
+        else {
+            this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
+        }
+    }
+
+    public void saveDataBlockToMainMemory(DataBlock block, int label){
+        this.mainMemory.setDataBlock(block, label);
+    }
+
+    public void invalidateBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
+        if (isSimpleCore){
+            this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
+        }
+        else {
+            this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
+        }
+    }
+
+    public boolean isOtherCoreRunning(boolean isSimpleCore){
+        if (isSimpleCore){
+            return this.dualCore.isRunning();
+        }
+        else {
+            return this.simpleCore.isRunning();
         }
     }
 }
