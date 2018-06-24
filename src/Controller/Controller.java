@@ -36,14 +36,7 @@ public class Controller {
      * Prints the current status of the contexts, cores, and memory.
      */
     public void printCurrentStatus(){
-        System.out.println(this.simulation.getContextsString() + "\n");
-        System.out.println("--- Nucleo 0 ---");
-        System.out.println(this.simulation.getDualCore().getDataCache().toString());
-        System.out.println("--- Fin de Nucleo 0 ---\n");
-        System.out.println("--- Nucleo 1 ---");
-        System.out.println(this.simulation.getSimpleCore().getDataCache().toString());
-        System.out.println("--- Fin de Nucleo 1 ---\n");
-        System.out.println(this.simulation.getMainMemory().toString());
+        this.simulation.printCurrentStatus();
     }
 
 

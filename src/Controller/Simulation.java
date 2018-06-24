@@ -155,38 +155,52 @@ public class Simulation {
         this.dualCore.start();
         this.simpleCore.start();
 
-        int cycleCounter = 0;
         while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
             System.out.println(this.getCurrentThreads());
             ++this.clock;
             if(slowMode && this.clock % 20 == 0){
-                System.out.println("Digite Enter para continuar");
+                this.printCurrentStatus();
+                System.out.println("\nPresione Enter para continuar");
                 try
                 {
                     System.in.read();
                 }
-                catch(Exception e)
-                {}
-                try {
-                    this.barrier.await();
-                }
+                catch(Exception e) {
 
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (BrokenBarrierException e) {
-                    e.printStackTrace();
                 }
+                this.tickBarrier();
             }
             else {
-                try {
-                    this.barrier.await();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (BrokenBarrierException e) {
-                    e.printStackTrace();
-                }
+                this.tickBarrier();
             }
         }
+    }
+
+    /**
+     * Awaits at the barrier
+     */
+    private void tickBarrier(){
+        try {
+            this.barrier.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (BrokenBarrierException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Print the status of the storage units
+     */
+    public void printCurrentStatus(){
+        System.out.println(this.getContextsString() + "\n");
+        System.out.println("--- Nucleo 0 ---");
+        System.out.println(this.getDualCore().getDataCache().toString());
+        System.out.println("--- Fin de Nucleo 0 ---\n");
+        System.out.println("--- Nucleo 1 ---");
+        System.out.println(this.getSimpleCore().getDataCache().toString());
+        System.out.println("--- Fin de Nucleo 1 ---\n");
+        System.out.println(this.getMainMemory().toString());
     }
 
     /**
@@ -360,7 +374,7 @@ public class Simulation {
         String result = "Ciclo: " + this.clock + "\n";
         result += "Nucleo 0, hilo 0: " + this.dualCore.getThread1Name() + "\n";
         result += "Nucleo 0, hilo 1: " + this.dualCore.getThread2Name() + "\n";
-        result += "Nucleo 1: " + this.simpleCore.getThreadName() + "\n\n";
+        result += "Nucleo 1: " + this.simpleCore.getThreadName() + "\n";
         return result;
     }
 }
