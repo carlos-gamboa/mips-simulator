@@ -38,7 +38,6 @@ public class Simulation {
         this.instructionsBus = new ReentrantLock();
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
-        this.barrier = new CyclicBarrier(3);
     }
 
     public CyclicBarrier getBarrier() {
@@ -121,6 +120,13 @@ public class Simulation {
 
     public void setSlowMode(boolean slowMode) {
         this.slowMode = slowMode;
+
+        if (!slowMode){
+            this.barrier = new CyclicBarrier(3);
+        }
+        else{
+            this.barrier = new CyclicBarrier(4); //Hay una barrera más que es la del key listener
+        }
     }
 
     public void start(){
@@ -128,14 +134,40 @@ public class Simulation {
         this.simpleCore = new SimpleCore(this, this.quantum);
         this.dualCore.start();
         this.simpleCore.start();
+
+        int cycleCounter = 0;
         while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
-            ++this.clock;
-            try {
-                this.barrier.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (BrokenBarrierException e) {
-                e.printStackTrace();
+            if(slowMode && this.clock % 20 == 0){
+                cycleCounter = 0;
+                System.out.println("Reloj simulación:" + this.clock);
+                ++this.clock;
+                System.out.println("Digite Enter para continuar");
+                try
+                {
+                    System.in.read();
+                }
+                catch(Exception e)
+                {}
+                try {
+                    this.barrier.await();
+                }
+
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                ++cycleCounter;
+                ++this.clock;
+                try {
+                    this.barrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
