@@ -26,6 +26,8 @@ public class DualCore extends Core {
 
     public DualCore(Simulation simulation, int quantum){
         super(simulation, 8, false, quantum);
+        this.thread1Context = null;
+        this.thread2Context = null;
         this.thread1Status = ThreadStatus.Running;
         this.thread2Status = ThreadStatus.Null;
         this.oldestThread = 1;
@@ -219,6 +221,7 @@ public class DualCore extends Core {
         if (isThread1){
             this.thread1Context.setFinishingCycle(super.getClock());
             super.simulation.addFinishedContext(this.thread1Context);
+            this.thread1Context = null;
             if (!super.simulation.areMoreContexts()){
                 if (this.thread2Status == ThreadStatus.Finished){
                     super.setRunning(false);
@@ -245,6 +248,7 @@ public class DualCore extends Core {
         } else {
             this.thread2Context.setFinishingCycle(super.getClock());
             super.simulation.addFinishedContext(this.thread2Context);
+            this.thread2Context = null;
             if (!super.simulation.areMoreContexts()){
                 if (this.thread1Status == ThreadStatus.Finished){
                     super.setRunning(false);
@@ -381,8 +385,7 @@ public class DualCore extends Core {
                     this.nextCycle();
                 }
                 else {
-                    if (this.simulation.getDataBus().tryLock()) {
-                        //TODO: CHECK LW
+                    if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                         boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                         if (result){
                             this.simulation.getDataBus().unlock();
@@ -401,12 +404,11 @@ public class DualCore extends Core {
                 }
             }
             else {
-                if (this.simulation.getDataBus().tryLock()) {
+                if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail(isThread1, blockLabel);
                         this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
                     }
-                    //TODO: CHECK LW
                     boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                     if (result){
                         this.simulation.getDataBus().unlock();
@@ -859,6 +861,32 @@ public class DualCore extends Core {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Gets the name of the running thread 1
+     *
+     * @return String
+     */
+    public String getThread1Name (){
+        if (this.thread1Context != null){
+            return this.thread1Context.getThreadName();
+        } else {
+            return "No hay hilo corriendo";
+        }
+    }
+
+    /**
+     * Gets the name of the running thread 2
+     *
+     * @return String
+     */
+    public String getThread2Name (){
+        if (this.thread2Context != null){
+            return this.thread2Context.getThreadName();
+        } else {
+            return "No hay hilo corriendo";
         }
     }
 }

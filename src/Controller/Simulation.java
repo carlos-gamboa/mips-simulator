@@ -148,6 +148,7 @@ public class Simulation {
         this.dualCore.start();
         this.simpleCore.start();
         while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
+            System.out.println(this.getCurrentThreads());
             ++this.clock;
             try {
                 this.barrier.await();
@@ -319,5 +320,18 @@ public class Simulation {
             contexts += this.finishedThreads.pop().toString();
         }
         return contexts;
+    }
+
+    /**
+     * Gets the data of the current cycle
+     *
+     * @return String
+     */
+    public String getCurrentThreads(){
+        String result = "Ciclo: " + this.clock + "\n";
+        result += "Nucleo 0, hilo 0: " + this.dualCore.getThread1Name() + "\n";
+        result += "Nucleo 0, hilo 1: " + this.dualCore.getThread2Name() + "\n";
+        result += "Nucleo 1: " + this.simpleCore.getThreadName() + "\n\n";
+        return result;
     }
 }

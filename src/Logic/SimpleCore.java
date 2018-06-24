@@ -352,4 +352,17 @@ public class SimpleCore extends Core {
         }
         this.threadContext.setRemainingQuantum(super.quantum);
     }
+
+    /**
+     * Get the name of the running thread
+     *
+     * @return String
+     */
+    public String getThreadName(){
+        if (this.threadContext != null){
+            return this.threadContext.getThreadName();
+        } else {
+            return "No hay hilo corriendo";
+        }
+    }
 }
