@@ -117,7 +117,9 @@ public class SimpleCore extends Core {
                     this.manageFIN();
                     break;
             }
-            this.getCurrentThread().setRemainingQuantum(this.getCurrentThread().getRemainingQuantum() - 1);
+            if (this.threadContext != null) {
+                this.getCurrentThread().setRemainingQuantum(this.getCurrentThread().getRemainingQuantum() - 1);
+            }
         } else {
             this.manageQuantumEnd();
         }

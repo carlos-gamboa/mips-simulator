@@ -113,7 +113,6 @@ public class DualCore extends Core {
                 instruction = this.checkReservedInstructionPosition(this.thread1Context,this.thread1Context.getPc(), true);
                 if (instruction != null) {
                     System.out.println("Instruccion1: " + instruction.toString());
-                    System.out.println("Contexto1: " + thread1Context.toString());
                     this.thread1Context.setPc(this.thread1Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread1Context, true);
                 }
@@ -153,7 +152,6 @@ public class DualCore extends Core {
                 instruction = checkReservedInstructionPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
                     System.out.println("Instruccion2: " + instruction.toString());
-                    System.out.println("Contexto2: " + thread2Context.toString());
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
                 }
@@ -218,7 +216,9 @@ public class DualCore extends Core {
                     this.manageFIN(isThread1);
                     break;
             }
-            context.setRemainingQuantum(context.getRemainingQuantum() - 1);
+            if ((isThread1 && this.thread1Context != null) || (!isThread1 && this.thread2Context != null)) {
+                context.setRemainingQuantum(context.getRemainingQuantum() - 1);
+            }
         } else {
             this.manageQuantumEnd(isThread1);
         }
@@ -236,8 +236,8 @@ public class DualCore extends Core {
             this.thread1Context = null;
             if (!super.simulation.areMoreContexts()){
                 if (this.thread2Status == ThreadStatus.Finished){
-                    super.setRunning(false);
                     this.thread1Status = ThreadStatus.Finished;
+                    super.setRunning(false);
                 }
                 else {
                     this.thread1Status = ThreadStatus.Finished;
@@ -263,8 +263,8 @@ public class DualCore extends Core {
             this.thread2Context = null;
             if (!super.simulation.areMoreContexts()){
                 if (this.thread1Status == ThreadStatus.Finished){
-                    super.setRunning(false);
                     this.thread2Status = ThreadStatus.Finished;
+                    super.setRunning(false);
                 }
                 else {
                     this.thread2Status = ThreadStatus.Finished;
@@ -657,13 +657,9 @@ public class DualCore extends Core {
                     this.thread1Status = ThreadStatus.Running;
                 } else {
                     if (this.oldestThread == 1) {
-                        if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.DataCacheFailRunning || this.thread2Status == ThreadStatus.InstructionCacheFailRunning || this.thread2Status == ThreadStatus.Waiting) {
-                            if (this.dataBusReserved != 2  && this.instructionBusReserved != 2) {
-                                this.thread2Status = ThreadStatus.Waiting;
-                                this.thread1Status = ThreadStatus.Running;
-                            } else {
-                                this.thread1Status = ThreadStatus.Waiting;
-                            }
+                        if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.Waiting) {
+                            this.thread2Status = ThreadStatus.Waiting;
+                            this.thread1Status = ThreadStatus.Running;
                         } else {
                             this.thread1Status = ThreadStatus.Waiting;
                         }
@@ -684,13 +680,9 @@ public class DualCore extends Core {
                     this.thread2Status = ThreadStatus.Running;
                 } else {
                     if (this.oldestThread == 2) {
-                        if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.DataCacheFailRunning || this.thread1Status == ThreadStatus.InstructionCacheFailRunning || this.thread1Status == ThreadStatus.Waiting) {
-                            if (this.dataBusReserved != 1 && this.instructionBusReserved != 1) {
-                                this.thread1Status = ThreadStatus.Waiting;
-                                this.thread2Status = ThreadStatus.Running;
-                            } else {
-                                this.thread2Status = ThreadStatus.Waiting;
-                            }
+                        if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.Waiting) {
+                            this.thread1Status = ThreadStatus.Waiting;
+                            this.thread2Status = ThreadStatus.Running;
                         } else {
                             this.thread2Status = ThreadStatus.Waiting;
                         }
@@ -852,13 +844,9 @@ public class DualCore extends Core {
                     this.thread1Status = ThreadStatus.Running;
                 } else {
                     if (this.oldestThread == 1) {
-                        if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.DataCacheFailRunning || this.thread2Status == ThreadStatus.InstructionCacheFailRunning || this.thread2Status == ThreadStatus.Waiting) {
-                            if (this.instructionBusReserved != 2  && this.dataBusReserved != 2) {
-                                this.thread2Status = ThreadStatus.Waiting;
-                                this.thread1Status = ThreadStatus.Running;
-                            } else {
-                                this.thread1Status = ThreadStatus.Waiting;
-                            }
+                        if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.Waiting) {
+                            this.thread2Status = ThreadStatus.Waiting;
+                            this.thread1Status = ThreadStatus.Running;
                         } else {
                             this.thread1Status = ThreadStatus.Waiting;
                         }
@@ -878,13 +866,9 @@ public class DualCore extends Core {
                     this.thread2Status = ThreadStatus.Running;
                 } else {
                     if (this.oldestThread == 2) {
-                        if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.DataCacheFailRunning || this.thread1Status == ThreadStatus.InstructionCacheFailRunning || this.thread1Status == ThreadStatus.Waiting) {
-                            if (this.instructionBusReserved != 1  && this.dataBusReserved != 1) {
-                                this.thread1Status = ThreadStatus.Waiting;
-                                this.thread2Status = ThreadStatus.Running;
-                            } else {
-                                this.thread2Status = ThreadStatus.Waiting;
-                            }
+                        if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.Waiting) {
+                            this.thread1Status = ThreadStatus.Waiting;
+                            this.thread2Status = ThreadStatus.Running;
                         } else {
                             this.thread2Status = ThreadStatus.Waiting;
                         }
