@@ -14,6 +14,9 @@ public class Controller {
         this.terminal = new Terminal();
     }
 
+    /**
+     * Starts the program
+     */
     public void start(){
         try {
             this.simulation.setQuantum(this.terminal.getQuantum());
@@ -29,6 +32,9 @@ public class Controller {
         }
     }
 
+    /**
+     * Prints the current status of the contexts, cores, and memory.
+     */
     public void printCurrentStatus(){
         System.out.println(this.simulation.getContextsString() + "\n");
         System.out.println("--- Nucleo 0 ---");

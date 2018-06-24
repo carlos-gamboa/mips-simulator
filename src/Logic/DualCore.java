@@ -37,6 +37,9 @@ public class DualCore extends Core {
         this.thread2 = new Thread(this, "Thread 2");
     }
 
+    /**
+     * Starts the core
+     */
     public void start(){
         this.thread1.start();
         this.thread2.start();
@@ -83,8 +86,12 @@ public class DualCore extends Core {
         this.thread2Status = thread2Status;
     }
 
+    /**
+     * Starts the Thread 1
+     */
     private void runThread1(){
         Instruction instruction;
+        //Checks if there are more contexts in the queue
         if (super.simulation.areMoreContexts()) {
             this.thread1Context = super.simulation.getNextContext();
             this.thread1Context.setRemainingQuantum(super.getQuantum());
@@ -99,7 +106,7 @@ public class DualCore extends Core {
         }
         while (this.thread1Status != ThreadStatus.Finished){
             while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
-                instruction = this.checkReservedPosition(this.thread1Context,this.thread1Context.getPc(), true);
+                instruction = this.checkReservedInstructionPosition(this.thread1Context,this.thread1Context.getPc(), true);
                 if (instruction != null) {
                     this.thread1Context.setPc(this.thread1Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread1Context, true);
@@ -109,16 +116,21 @@ public class DualCore extends Core {
                 this.nextCycle();
             }
         }
+        //Adds cycles while the other threads are still running
         while(super.isRunning || super.simulation.isOtherCoreRunning(super.isSimpleCore)){
             this.nextCycle();
         }
     }
 
+    /**
+     * Starts the Thread 2
+     */
     private void runThread2(){
         Instruction instruction;
         while (this.thread2Status == ThreadStatus.Null){
-            //DO NOTHING
+            //Waits until the Thread 1 allows Thread 2 to start
         }
+        //Checks if there are more contexts in the queue
         if (super.simulation.areMoreContexts()) {
             this.thread2Context = super.simulation.getNextContext();
             this.thread2Context.setRemainingQuantum(super.getQuantum());
@@ -129,7 +141,7 @@ public class DualCore extends Core {
         }
         while (this.thread2Status != ThreadStatus.Finished) {
             while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
-                instruction = checkReservedPosition(this.thread2Context,this.thread2Context.getPc(), false);
+                instruction = checkReservedInstructionPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
@@ -139,11 +151,19 @@ public class DualCore extends Core {
                 this.nextCycle();
             }
         }
+        //Adds cycles while the other threads are still running
         while(super.isRunning || super.simulation.isOtherCoreRunning(super.isSimpleCore)){
             this.nextCycle();
         }
     }
 
+    /**
+     * Manages an instruction
+     *
+     * @param instruction Instruction to be executed
+     * @param context Context of the thread that's going to execute it
+     * @param isThread1 If the thread is the thread 1
+     */
     private void manageInstruction(Instruction instruction, Context context, boolean isThread1){
         if (context.getRemainingQuantum() != 0){
             switch (instruction.getOperationCode()){
@@ -190,6 +210,11 @@ public class DualCore extends Core {
         }
     }
 
+    /**
+     * Executes the final instruction
+     *
+     * @param isThread1 If the thread is the thread 1
+     */
     private void manageFIN (boolean isThread1){
         if (isThread1){
             this.thread1Context.setFinishingCycle(super.getClock());
@@ -247,7 +272,16 @@ public class DualCore extends Core {
         super.nextCycle();
     }
 
-    public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
+    /**
+     * Manages the LW instruction
+     *
+     * @param context Context of the thread
+     * @param destinyRegister Number of the destiny register
+     * @param sourceRegister Number of the source register
+     * @param immediate Value of the immediate
+     * @param isThread1 If the thread is the thread 1
+     */
+    private void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
@@ -259,8 +293,8 @@ public class DualCore extends Core {
                     super.nextCycle();
                 }
                 else {
-                    if (this.reservePosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
-                        boolean result = this.manageCheckOtherCache(blockLabel, true, context, isThread1);
+                    if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
+                        boolean result = this.manageCheckOtherDataCache(blockLabel, true, context, isThread1);
                         if (result){
                             this.simulation.getDataBus().unlock();
                             this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
@@ -277,12 +311,12 @@ public class DualCore extends Core {
                 }
             }
             else {
-                if (this.reservePosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
+                if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail(isThread1, blockLabel);
                         this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
                     }
-                    boolean result = this.manageCheckOtherCache(blockLabel, true, context, isThread1);
+                    boolean result = this.manageCheckOtherDataCache(blockLabel, true, context, isThread1);
                     if (result){
                         this.simulation.getDataBus().unlock();
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
@@ -303,7 +337,16 @@ public class DualCore extends Core {
         }
     }
 
-    public void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
+    /**
+     * Manages the SW instruction
+     *
+     * @param context Context of the thread
+     * @param destinyRegister Number of the destiny register
+     * @param sourceRegister Number of the source register
+     * @param immediate Value of the immediate
+     * @param isThread1 If the thread is the thread 1
+     */
+    private void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
@@ -339,7 +382,8 @@ public class DualCore extends Core {
                 }
                 else {
                     if (this.simulation.getDataBus().tryLock()) {
-                        boolean result = this.manageCheckOtherCache(blockLabel, false, context, isThread1);
+                        //TODO: CHECK LW
+                        boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                         if (result){
                             this.simulation.getDataBus().unlock();
                             this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
@@ -362,7 +406,8 @@ public class DualCore extends Core {
                         this.manageDataCacheFail(isThread1, blockLabel);
                         this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
                     }
-                    boolean result = this.manageCheckOtherCache(blockLabel, false, context, isThread1);
+                    //TODO: CHECK LW
+                    boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                     if (result){
                         this.simulation.getDataBus().unlock();
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
@@ -384,11 +429,25 @@ public class DualCore extends Core {
         }
     }
 
+    /**
+     * Makes a thread redo an instruction
+     *
+     * @param context Context of the thread
+     */
     private void startOver(Context context){
         context.setPc(context.getPc() - 4);
     }
 
-    private boolean manageCheckOtherCache(int blockLabel, boolean isLoad, Context context, boolean isThread1){
+    /**
+     * Checks if the other cache has the desired block
+     *
+     * @param blockLabel Label of the desired block
+     * @param isLoad If the instruction is LW
+     * @param context Context of the thread
+     * @param isThread1 If the thread is Thread 1
+     * @return True if the process was fully executed
+     */
+    private boolean manageCheckOtherDataCache(int blockLabel, boolean isLoad, Context context, boolean isThread1){
         boolean successful = true;
         if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
             if (this.simulation.checkDataBlockOnOtherCache(this.isSimpleCore, blockLabel)){
@@ -434,7 +493,13 @@ public class DualCore extends Core {
         return successful;
     }
 
-    public void manageDataCacheFail(boolean isThread1, int blockLabel){
+    /**
+     * Manages a Data cache fail
+     *
+     * @param isThread1 If the thread is thread 1
+     * @param blockLabel Label of the block
+     */
+    private void manageDataCacheFail(boolean isThread1, int blockLabel){
         if (isThread1){
             this.thread1Status = ThreadStatus.DataCacheFail;
             if (this.thread2Status !=   ThreadStatus.Finished) {
@@ -459,6 +524,16 @@ public class DualCore extends Core {
         }
     }
 
+    /**
+     * Checks if the block in the data cache is reserved
+     *
+     * @param context Context of the thread
+     * @param destinyRegister Number of the destiny register
+     * @param sourceRegister Number of the source register
+     * @param immediate Value of the immediate
+     * @param isThread1 If the thread is the thread 1
+     * @param isLoad If the instruction is LW
+     */
     private void checkReservedDataPosition(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1, boolean isLoad){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         if (isThread1){
@@ -488,7 +563,15 @@ public class DualCore extends Core {
         }
     }
 
-    private Instruction checkReservedPosition(Context context, int pc, boolean isThread1){
+    /**
+     * Checks if the desired instruction block is reserved
+     *
+     * @param context Context of the thread
+     * @param pc Pc of the thread
+     * @param isThread1 If the thread is thread 1
+     * @return Null | Instruction
+     */
+    private Instruction checkReservedInstructionPosition(Context context, int pc, boolean isThread1){
         Instruction instruction = null;
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(pc);
         if (isThread1){
@@ -511,7 +594,14 @@ public class DualCore extends Core {
         return instruction;
     }
 
-    private boolean reservePosition(int blockIndex, boolean isThread1){
+    /**
+     * Tries to reserve a position in the data cache
+     *
+     * @param blockIndex Index of the block to reserve
+     * @param isThread1 If the thread is thread 1
+     * @return True if was reserved
+     */
+    private boolean reserveDataPosition(int blockIndex, boolean isThread1){
         boolean reserved = false;
         if (isThread1 && this.thread2Status != ThreadStatus.DataCacheFail && this.thread2Status != ThreadStatus.DataCacheFailRunning){
             this.thread1Status = ThreadStatus.DataCacheFailRunning;
@@ -527,6 +617,11 @@ public class DualCore extends Core {
         return reserved;
     }
 
+    /**
+     * Checks if a thread can continue executing after solving a Data cache fail
+     *
+     * @param isThread1 If the thread is thread 1
+     */
     private void checkIfCanContinueData(boolean isThread1){
         if (isThread1){
             if (this.thread2Status == ThreadStatus.Finished){
@@ -544,7 +639,6 @@ public class DualCore extends Core {
                             this.thread2Status = ThreadStatus.Waiting;
                             this.thread1Status = ThreadStatus.Running;
                         }
-                        //super.nextCycle();
                     } else {
                         this.thread1Status = ThreadStatus.Waiting;
                         while (this.thread1Status != ThreadStatus.Running && this.thread1Status != ThreadStatus.DataCacheFailRunning && this.thread1Status != ThreadStatus.InstructionCacheFailRunning) {
@@ -570,7 +664,6 @@ public class DualCore extends Core {
                             this.thread1Status = ThreadStatus.Waiting;
                             this.thread2Status = ThreadStatus.Running;
                         }
-                        //super.nextCycle();
                     } else {
                         this.thread2Status = ThreadStatus.Waiting;
                         while (this.thread2Status != ThreadStatus.Running && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.thread2Status != ThreadStatus.InstructionCacheFailRunning) {
@@ -582,6 +675,11 @@ public class DualCore extends Core {
         }
     }
 
+    /**
+     * Manages the end of the quantum of a thread
+     *
+     * @param isThread1 If the thread is thread 1
+     */
     private void manageQuantumEnd(boolean isThread1){
         if (isThread1){
             this.thread1Context.setPc(this.thread1Context.getPc() - 4);
@@ -602,6 +700,13 @@ public class DualCore extends Core {
         }
     }
 
+    /**
+     * Gets an instruction based on the given PC
+     *
+     * @param pc PC of the thread.
+     * @param isThread1 If the thread is thread 1
+     * @return Null | Instruction
+     */
     private Instruction getInstruction(int pc, boolean isThread1){
         Instruction instruction = null;
         InstructionBlock block;
@@ -648,6 +753,13 @@ public class DualCore extends Core {
         return instruction;
     }
 
+    /**
+     * Tries to reserve a position in the instruction cache
+     *
+     * @param blockIndex Index of the block to reserve
+     * @param isThread1 If the thread is thread 1
+     * @return True if was reserved
+     */
     private boolean reserveInstructionPosition (int blockIndex, boolean isThread1){
         boolean reserved = false;
         if (isThread1 && this.thread2Status != ThreadStatus.InstructionCacheFail && this.thread2Status != ThreadStatus.InstructionCacheFailRunning){
@@ -664,6 +776,12 @@ public class DualCore extends Core {
         return reserved;
     }
 
+    /**
+     * Manages a Instruction cache fail
+     *
+     * @param isThread1 If the thread is thread 1
+     * @param blockLabel Label of the block
+     */
     private void manageInstructionCacheFail(boolean isThread1, int blockLabel){
         if (isThread1){
             this.thread1Status = ThreadStatus.InstructionCacheFail;
@@ -687,6 +805,11 @@ public class DualCore extends Core {
         }
     }
 
+    /**
+     * Checks if a thread can continue executing after solving a Instruction cache fail
+     *
+     * @param isThread1 If the thread is thread 1
+     */
     private void checkIfCanContinueInstruction(boolean isThread1){
         if (isThread1){
             if (this.thread2Status == ThreadStatus.Finished){
@@ -704,7 +827,6 @@ public class DualCore extends Core {
                             this.thread2Status = ThreadStatus.Waiting;
                             this.thread1Status = ThreadStatus.Running;
                         }
-                        //super.nextCycle();
                     } else {
                         this.thread1Status = ThreadStatus.Waiting;
                         while (this.thread1Status != ThreadStatus.Running && this.thread1Status != ThreadStatus.DataCacheFailRunning && this.thread1Status != ThreadStatus.InstructionCacheFailRunning) {
@@ -729,7 +851,6 @@ public class DualCore extends Core {
                             this.thread1Status = ThreadStatus.Waiting;
                             this.thread2Status = ThreadStatus.Running;
                         }
-                        //super.nextCycle();
                     } else {
                         this.thread2Status = ThreadStatus.Waiting;
                         while (this.thread2Status != ThreadStatus.Running && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.thread2Status != ThreadStatus.InstructionCacheFailRunning) {

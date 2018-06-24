@@ -28,10 +28,22 @@ public class InstructionCache {
         this.blocks[i] = block;
     }
 
+    /**
+     * Checks if the cache has a block with the label
+     *
+     * @param label Label of the block
+     * @return True | False
+     */
     public boolean hasBlock(int label){
         return (this.blocks[this.calculateIndexByLabel(label)].getLabel() == label);
     }
 
+    /**
+     * Calculates the index of the block in the cache by it's label
+     *
+     * @param label Label of the block
+     * @return Index of the block in the cache
+     */
     public int calculateIndexByLabel(int label){
         return label % blocks.length;
     }

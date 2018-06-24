@@ -139,6 +139,9 @@ public class Simulation {
         this.slowMode = slowMode;
     }
 
+    /**
+     * Starts the simulation
+     */
     public void start(){
         this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
@@ -156,6 +159,11 @@ public class Simulation {
         }
     }
 
+    /**
+     * Stores all the instructions to the main memory
+     *
+     * @param instructions ArrayList with all the instructions
+     */
     public void addInstructionsToMemory(ArrayList<Instruction> instructions){
 
         int blockNumber = 0;
@@ -196,6 +204,12 @@ public class Simulation {
         this.mainMemory.setInstructionBlocks(instructionBlocks);
     }
 
+    /**
+     * Adds the contexts of the threads to the queue
+     *
+     * @param threadStartingPoint PC of each thread
+     * @param threadNames Name of each thread
+     */
     public void setContexts(int [] threadStartingPoint, String[] threadNames){
 
         //We calculate the corresponding adress in memory by using the
@@ -212,6 +226,13 @@ public class Simulation {
         }
     }
 
+    /**
+     * Gets data from the cache of the other core
+     *
+     * @param isSimpleCore If the core only has 1 thread
+     * @param blockLabel Label of the block to be returned
+     * @return DataBlock of the desired label
+     */
     public DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
             return this.dualCore.getDataCache().getBlock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel));
@@ -221,6 +242,13 @@ public class Simulation {
         }
     }
 
+    /**
+     * Checks if the cache of the other core contains a certain block
+     *
+     * @param isSimpleCore If the core only has 1 thread
+     * @param blockLabel Label of the block you want to check
+     * @return True if the cache has the block
+     */
     public boolean checkDataBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
             return this.dualCore.getDataCache().hasBlock(blockLabel);
@@ -230,6 +258,13 @@ public class Simulation {
         }
     }
 
+    /**
+     * Changes the cache status of a block in the cache of the other core
+     *
+     * @param isSimpleCore If the core only has 1 thread
+     * @param blockLabel Label of the block you want to change the status
+     * @param status New status for the block
+     */
     public void changeDataBlockStatusFromOtherCache(boolean isSimpleCore, int blockLabel, CacheStatus status){
         if (isSimpleCore){
             this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
@@ -239,6 +274,12 @@ public class Simulation {
         }
     }
 
+    /**
+     * Copies a data block to main memory
+     *
+     * @param block Block you want to copy
+     * @param label Label of the block
+     */
     public void saveDataBlockToMainMemory(DataBlock block, int label){
         this.mainMemory.setDataBlock(block, label);
     }
@@ -252,6 +293,12 @@ public class Simulation {
         }
     }
 
+    /**
+     * Checks if the other core is still running
+     *
+     * @param isSimpleCore If the core only has 1 thread
+     * @return True if the other core is still running
+     */
     public boolean isOtherCoreRunning(boolean isSimpleCore){
         if (isSimpleCore){
             return this.dualCore.isRunning();
@@ -261,6 +308,11 @@ public class Simulation {
         }
     }
 
+    /**
+     * Returns the context of the threads as string
+     *
+     * @return String containing the contexts
+     */
     public String getContextsString(){
         String contexts = "";
         while (!this.finishedThreads.isEmpty()){

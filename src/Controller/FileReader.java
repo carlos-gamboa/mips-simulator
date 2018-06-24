@@ -69,6 +69,11 @@ public class FileReader {
         this.fileNumber = fileNumber;
     }
 
+    /**
+     * Reads the thread files and stores the instructions as well as the PC.
+     *
+     * @throws IOException
+     */
     public void readThreads() throws IOException {
 
         this.threadStartingPoint[0]=0;
