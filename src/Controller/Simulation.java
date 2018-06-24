@@ -81,6 +81,22 @@ public class Simulation {
         this.instructionsBus = instructionsBus;
     }
 
+    public DualCore getDualCore() {
+        return dualCore;
+    }
+
+    public void setDualCore(DualCore dualCore) {
+        this.dualCore = dualCore;
+    }
+
+    public SimpleCore getSimpleCore() {
+        return simpleCore;
+    }
+
+    public void setSimpleCore(SimpleCore simpleCore) {
+        this.simpleCore = simpleCore;
+    }
+
     public boolean tryLockInstructionsCacheBlock(){
         return true;
     }
@@ -180,7 +196,7 @@ public class Simulation {
         this.mainMemory.setInstructionBlocks(instructionBlocks);
     }
 
-    public void setContexts(int [] threadStartingPoint){
+    public void setContexts(int [] threadStartingPoint, String[] threadNames){
 
         //We calculate the corresponding adress in memory by using the
         //equation address = 384 + (instructionNumber * 4)
@@ -191,6 +207,7 @@ public class Simulation {
             context = new Context();
             int memoryAddress = 384 + (threadStartingPoint[i] * 4);
             context.setPc(memoryAddress);
+            context.setThreadName(threadNames[i]);
             threadQueue.addLast(context);
         }
     }
@@ -242,5 +259,13 @@ public class Simulation {
         else {
             return this.simpleCore.isRunning();
         }
+    }
+
+    public String getContextsString(){
+        String contexts = "";
+        while (!this.finishedThreads.isEmpty()){
+            contexts += this.finishedThreads.pop().toString();
+        }
+        return contexts;
     }
 }

@@ -88,7 +88,9 @@ public class DualCore extends Core {
         if (super.simulation.areMoreContexts()) {
             this.thread1Context = super.simulation.getNextContext();
             this.thread1Context.setRemainingQuantum(super.getQuantum());
-            this.thread1Context.setStartingCycle(super.getClock());
+            if (this.thread1Context.getStartingCycle() == -1){
+                this.thread1Context.setStartingCycle(super.getClock());
+            }
         }
         else {
             this.thread1Status = ThreadStatus.Finished;
@@ -120,8 +122,9 @@ public class DualCore extends Core {
         if (super.simulation.areMoreContexts()) {
             this.thread2Context = super.simulation.getNextContext();
             this.thread2Context.setRemainingQuantum(super.getQuantum());
-            this.thread2Context.setStartingCycle(super.getClock());
-        } else {
+            if (this.thread2Context.getStartingCycle() == -1){
+                this.thread2Context.setStartingCycle(super.getClock());
+            }        } else {
             this.thread2Status = ThreadStatus.Finished;
         }
         while (this.thread2Status != ThreadStatus.Finished) {
@@ -205,7 +208,9 @@ public class DualCore extends Core {
             }
             else {
                 this.thread1Context = super.simulation.getNextContext();
-                this.thread1Context.setStartingCycle(super.getClock());
+                if (this.thread1Context.getStartingCycle() == -1){
+                    this.thread1Context.setStartingCycle(super.getClock());
+                }
                 this.oldestThread = 2;
                 if (this.thread2Status == ThreadStatus.Waiting){
                     this.thread2Status = ThreadStatus.Running;
@@ -229,7 +234,9 @@ public class DualCore extends Core {
             }
             else {
                 this.thread2Context = super.simulation.getNextContext();
-                this.thread2Context.setStartingCycle(super.getClock());
+                if (this.thread2Context.getStartingCycle() == -1){
+                    this.thread2Context.setStartingCycle(super.getClock());
+                }
                 this.oldestThread = 1;
                 if (this.thread1Status == ThreadStatus.Waiting){
                     this.thread1Status = ThreadStatus.Running;
@@ -580,13 +587,17 @@ public class DualCore extends Core {
             this.thread1Context.setPc(this.thread1Context.getPc() - 4);
             super.simulation.addContext(this.thread1Context);
             this.thread1Context = super.simulation.getNextContext();
-            this.thread1Context.setStartingCycle(super.clock);
+            if (this.thread1Context.getStartingCycle() == -1){
+                this.thread1Context.setStartingCycle(super.getClock());
+            }
             this.thread1Context.setRemainingQuantum(super.quantum);
         } else {
             this.thread2Context.setPc(this.thread2Context.getPc() - 4);
             super.simulation.addContext(this.thread2Context);
             this.thread2Context = super.simulation.getNextContext();
-            this.thread2Context.setStartingCycle(super.clock);
+            if (this.thread2Context.getStartingCycle() == -1){
+                this.thread2Context.setStartingCycle(super.getClock());
+            }
             this.thread2Context.setRemainingQuantum(super.quantum);
         }
     }

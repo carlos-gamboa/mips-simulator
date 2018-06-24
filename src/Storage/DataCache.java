@@ -37,12 +37,12 @@ public class DataCache {
     }
 
     public String toString(){
-        String cache = "--- DATA CACHE ---\n";
+        String cache = "--- CACHE DE DATOS ---\n";
         for (int i = 0; i < this.blocks.length; ++i){
             cache += this.blocks[i].toString();
             cache += "\n";
         }
-        cache += "--- END OF INSTRUCTIONS CACHE ---";
+        cache += "--- FIN DE CACHE DE DATOS ---";
         return cache;
     }
 

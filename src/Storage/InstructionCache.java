@@ -37,12 +37,12 @@ public class InstructionCache {
     }
 
     public String toString(){
-        String cache = "--- INSTRUCTIONS CACHE ---\n";
+        String cache = "--- CACHE DE INSTRUCCIONES ---\n";
         for (int i = 0; i < this.blocks.length; ++i){
             cache += this.blocks[i].toString();
             cache += "\n";
         }
-        cache += "--- END OF INSTRUCTIONS CACHE ---";
+        cache += "--- FIN DE CACHE DE INSTRUCCIONES ---";
         return cache;
     }
 

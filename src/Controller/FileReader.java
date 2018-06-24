@@ -99,25 +99,4 @@ public class FileReader {
         }
     }
 
-    public void printInstructionsStartingPoints(){
-
-        for(int i = 0; i < threadStartingPoint.length ; i++){
-            System.out.println(threadStartingPoint[i]);
-        }
-    }
-
-    public void printMemoryBlocks(InstructionBlock[] memoryInstructionBlocks){
-        System.out.println("MEMORY INSTRUCTION BLOCKS");
-        for (int i = 0; i < memoryInstructionBlocks.length;  i++){
-            for (int j = 0; j<4 ; j++){
-                System.out.println(memoryInstructionBlocks[i].getValue(j).getOperationCode());
-                System.out.println(memoryInstructionBlocks[i].getValue(j).getSourceRegister());
-                System.out.println(memoryInstructionBlocks[i].getValue(j).getDestinyRegister());
-                System.out.println(memoryInstructionBlocks[i].getValue(j).getImmediate());
-                System.out.println("---end instruction---");
-            }
-            System.out.println("---end BLOCK---");
-        }
-    }
-
 }

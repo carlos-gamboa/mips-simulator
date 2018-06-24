@@ -21,12 +21,12 @@ public class InstructionBlock extends Block {
     }
 
     public String toString(){
-        String block = "--- BLOCK " + super.getLabel() + " ---\n";
+        String block = "--- BLOQUE " + super.getLabel() + " ---\n";
         for (int i = 0; i < this.values.length; ++i){
             block += this.values[i].toString();
             block += "\n";
         }
-        block += "--- END OF BLOCK " + super.getLabel() + " ---";
+        block += "--- FIN DE BLOQUE " + super.getLabel() + " ---";
         return block;
     }
 

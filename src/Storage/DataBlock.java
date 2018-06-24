@@ -10,7 +10,7 @@ public class DataBlock extends Block {
         this.blockStatus = CacheStatus.Invalid;
         this.data = new int[4];
         for (int i = 0; i < 4; ++i){
-            this.data[i] = 1;
+            this.data[i] = 0;
         }
     }
 
@@ -31,12 +31,12 @@ public class DataBlock extends Block {
     }
 
     public String toString(){
-        String block = "--- BLOCK " + super.getLabel() + " ---\n";
+        String block = "--- BLOQUE " + super.getLabel() + " ---\n";
         for (int i = 0; i < this.data.length; ++i){
             block += String.valueOf(this.data[i]);
             block += "\n";
         }
-        block += "--- END OF BLOCK " + super.getLabel() + " ---";
+        block += "--- FIN DE BLOQUE " + super.getLabel() + " ---";
         return block;
     }
 

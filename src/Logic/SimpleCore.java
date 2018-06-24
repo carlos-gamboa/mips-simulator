@@ -26,7 +26,9 @@ public class SimpleCore extends Core {
         if (super.simulation.areMoreContexts()) {
             this.threadContext = super.simulation.getNextContext();
             this.threadContext.setRemainingQuantum(super.getQuantum());
-            this.threadContext.setStartingCycle(super.getClock());
+            if (this.threadContext.getStartingCycle() == -1){
+                this.threadContext.setStartingCycle(super.getClock());
+            }
         }
         else {
             super.setRunning(false);
@@ -59,7 +61,9 @@ public class SimpleCore extends Core {
         }
         else {
             this.threadContext = super.simulation.getNextContext();
-            this.threadContext.setStartingCycle(super.getClock());
+            if (this.threadContext.getStartingCycle() == -1){
+                this.threadContext.setStartingCycle(super.getClock());
+            }
         }
         super.nextCycle();
     }
@@ -303,7 +307,9 @@ public class SimpleCore extends Core {
         this.threadContext.setPc(this.threadContext.getPc() - 4);
         super.simulation.addContext(this.threadContext);
         this.threadContext = super.simulation.getNextContext();
-        this.threadContext.setStartingCycle(super.clock);
+        if (this.threadContext.getStartingCycle() == -1){
+            this.threadContext.setStartingCycle(super.getClock());
+        }
         this.threadContext.setRemainingQuantum(super.quantum);
     }
 }
