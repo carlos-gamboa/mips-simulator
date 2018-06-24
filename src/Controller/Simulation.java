@@ -38,7 +38,7 @@ public class Simulation {
         this.instructionsBus = new ReentrantLock();
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
-        this.barrier = new CyclicBarrier(3);
+        this.barrier = new CyclicBarrier(4);
     }
 
     public CyclicBarrier getBarrier() {

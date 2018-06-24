@@ -123,7 +123,6 @@ public class Core implements Runnable {
                     for (int i = 0; i < 40; ++i) {
                         this.nextCycle();
                     }
-                    System.out.println("RELOJ: " + this.clock);
                     this.copyFromMemoryToInstructionCache(blockLabel);
                     this.simulation.getInstructionsBus().unlock();
                     block = this.instructionCache.getBlock(cacheIndex);

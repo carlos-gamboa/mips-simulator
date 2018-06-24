@@ -37,7 +37,6 @@ public class SimpleCore extends Core {
             } while (instruction == null);
             this.threadContext.setPc(this.threadContext.getPc() + 4);
             this.manageInstruction(instruction);
-            System.out.println("Instruction: " + instruction.toString());
         }
         while(super.simulation.isOtherCoreRunning(super.isSimpleCore)){
             this.nextCycle();
@@ -251,7 +250,7 @@ public class SimpleCore extends Core {
     }
 
     private void startOver(){
-        this.threadContext.setPc(this.threadContext.getPc() + 4);
+        this.threadContext.setPc(this.threadContext.getPc() - 4);
     }
 
     private boolean manageCheckOtherCache(int blockLabel, boolean isLoad){

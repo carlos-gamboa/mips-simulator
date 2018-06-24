@@ -97,13 +97,10 @@ public class DualCore extends Core {
         }
         while (this.thread1Status != ThreadStatus.Finished){
             while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
-                //TODO: Check instruction reserved position.
-                instruction = this.getInstruction(this.thread1Context.getPc(), true);
+                instruction = this.checkReservedPosition(this.thread1Context,this.thread1Context.getPc(), true);
                 if (instruction != null) {
                     this.thread1Context.setPc(this.thread1Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread1Context, true);
-                    System.out.println("Instruction1: " + instruction.toString());
-                    System.out.println(super.clock);
                 }
             }
             if (super.isRunning) {
@@ -129,23 +126,19 @@ public class DualCore extends Core {
         }
         while (this.thread2Status != ThreadStatus.Finished) {
             while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
-                //TODO: Check instruction reserved position.
-                instruction = this.getInstruction(this.thread2Context.getPc(), false);
+                instruction = checkReservedPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
-                    System.out.println("Instruction2: " + instruction.toString());
-                    System.out.println(super.clock);
                 }
             }
             if (super.isRunning) {
                 this.nextCycle();
             }
         }
-        while(super.isRunning){
+        while(super.isRunning || super.simulation.isOtherCoreRunning(super.isSimpleCore)){
             this.nextCycle();
         }
-        System.out.println("salio");
     }
 
     private void manageInstruction(Instruction instruction, Context context, boolean isThread1){
@@ -179,10 +172,10 @@ public class DualCore extends Core {
                     this.manageJR(context, instruction.getSourceRegister());
                     break;
                 case 35:
-                    this.checkReservedPosition(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate(), isThread1, true);
+                    this.checkReservedDataPosition(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate(), isThread1, true);
                     break;
                 case 43:
-                    this.checkReservedPosition(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate(), isThread1, false);
+                    this.checkReservedDataPosition(context, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate(), isThread1, false);
                     break;
                 case 63:
                     this.manageFIN(isThread1);
@@ -385,7 +378,7 @@ public class DualCore extends Core {
     }
 
     private void startOver(Context context){
-        context.setPc(context.getPc() + 4);
+        context.setPc(context.getPc() - 4);
     }
 
     private boolean manageCheckOtherCache(int blockLabel, boolean isLoad, Context context, boolean isThread1){
@@ -459,7 +452,7 @@ public class DualCore extends Core {
         }
     }
 
-    private void checkReservedPosition(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1, boolean isLoad){
+    private void checkReservedDataPosition(Context context, int destinyRegister, int sourceRegister, int immediate, boolean isThread1, boolean isLoad){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         if (isThread1){
             if (this.thread2DataReservedPosition != this.dataCache.calculateIndexByLabel(blockLabel)){
@@ -486,6 +479,29 @@ public class DualCore extends Core {
                 this.startOver(context);
             }
         }
+    }
+
+    private Instruction checkReservedPosition(Context context, int pc, boolean isThread1){
+        Instruction instruction = null;
+        int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(pc);
+        if (isThread1){
+            if (this.thread2InstructionReservedPosition != this.instructionCache.calculateIndexByLabel(blockLabel)){
+                instruction = this.getInstruction(pc, isThread1);
+            }
+            else {
+                this.nextCycle();
+                this.startOver(context);
+            }
+        } else {
+            if (this.thread1InstructionReservedPosition != this.instructionCache.calculateIndexByLabel(blockLabel)){
+                instruction = this.getInstruction(pc, isThread1);
+            }
+            else {
+                this.nextCycle();
+                this.startOver(context);
+            }
+        }
+        return instruction;
     }
 
     private boolean reservePosition(int blockIndex, boolean isThread1){
