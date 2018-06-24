@@ -59,6 +59,7 @@ public class SimpleCore extends Core {
     private void manageFIN (){
         this.threadContext.setFinishingCycle(super.getClock());
         super.simulation.addFinishedContext(this.threadContext);
+        this.threadContext = null;
         if (!super.simulation.areMoreContexts()){
             super.setRunning(false);
         }
