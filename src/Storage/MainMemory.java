@@ -57,7 +57,7 @@ public class MainMemory {
     }
 
     public String toString(){
-        String memory = "--- MAIN MEMORY ---\n";
+        String memory = "--- MEMORIA PRINCIPAL ---\n";
         for (int i = 0; i < this.dataBlocks.length; ++i){
             memory += this.dataBlocks[i].toString();
             memory += "\n";
@@ -66,7 +66,7 @@ public class MainMemory {
             memory += this.instructionBlocks[i].toString();
             memory += "\n";
         }
-        memory += "--- END OF MAIN MEMORY ---";
+        memory += "--- FIN DE MEMORIA PRINCIPAL ---";
         return memory;
     }
 }

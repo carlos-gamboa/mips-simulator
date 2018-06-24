@@ -22,17 +22,26 @@ public class SimpleCore extends Core {
 
     @Override
     public void run(){
-        this.threadContext = super.simulation.getNextContext();
-        this.threadContext.setRemainingQuantum(super.getQuantum());
-        this.threadContext.setStartingCycle(super.getClock());
         Instruction instruction;
+        if (super.simulation.areMoreContexts()) {
+            this.threadContext = super.simulation.getNextContext();
+            this.threadContext.setRemainingQuantum(super.getQuantum());
+            if (this.threadContext.getStartingCycle() == -1){
+                this.threadContext.setStartingCycle(super.getClock());
+            }
+        }
+        else {
+            super.setRunning(false);
+        }
         while (super.isRunning()){
             do {
                 instruction = this.getInstruction(this.threadContext.getPc());
             } while (instruction == null);
             this.threadContext.setPc(this.threadContext.getPc() + 4);
             this.manageInstruction(instruction);
-            System.out.println("Instruction: " + instruction.toString());
+        }
+        while(super.simulation.isOtherCoreRunning(super.isSimpleCore)){
+            this.nextCycle();
         }
     }
 
@@ -44,19 +53,29 @@ public class SimpleCore extends Core {
         this.threadContext = currentThread;
     }
 
-    public void manageFIN (){
+    /**
+     * Execustes the FIN instruction
+     */
+    private void manageFIN (){
+        this.threadContext.setFinishingCycle(super.getClock());
+        super.simulation.addFinishedContext(this.threadContext);
         if (!super.simulation.areMoreContexts()){
             super.setRunning(false);
         }
         else {
-            this.threadContext.setFinishingCycle(super.getClock());
-            super.simulation.addFinishedContext(this.threadContext);
             this.threadContext = super.simulation.getNextContext();
-            this.threadContext.setStartingCycle(super.getClock());
+            if (this.threadContext.getStartingCycle() == -1){
+                this.threadContext.setStartingCycle(super.getClock());
+            }
         }
         super.nextCycle();
     }
 
+    /**
+     * Executes an instruction
+     *
+     * @param instruction Instruction to be executed
+     */
     private void manageInstruction(Instruction instruction){
         if (this.getCurrentThread().getRemainingQuantum() != 0){
             switch (instruction.getOperationCode()){
@@ -103,7 +122,15 @@ public class SimpleCore extends Core {
         }
     }
 
-    public void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate){
+    /**
+     * Manages the LW instruction
+     *
+     * @param context Context of the thread
+     * @param destinyRegister Number of the destiny register
+     * @param sourceRegister Number of the source register
+     * @param immediate Value of the immediate
+     */
+    private void manageLoadWord(Context context, int destinyRegister, int sourceRegister, int immediate){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
@@ -157,7 +184,15 @@ public class SimpleCore extends Core {
         }
     }
 
-    public void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate){
+    /**
+     * Manages the SW instruction
+     *
+     * @param context Context of the thread
+     * @param destinyRegister Number of the destiny register
+     * @param sourceRegister Number of the source register
+     * @param immediate Value of the immediate
+     */
+    private void manageStoreWord(Context context, int destinyRegister, int sourceRegister, int immediate){
         int blockLabel = this.simulation.getMainMemory().getBlockLabelByAddress(context.getRegister(sourceRegister) + immediate);
         int blockWord = this.simulation.getMainMemory().getBlockWordByAddress(context.getRegister(sourceRegister) + immediate);
         if (this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).tryLock()){
@@ -236,16 +271,29 @@ public class SimpleCore extends Core {
         }
     }
 
+    /**
+     * Manages a Data cache fail
+     */
     private void manageDataCacheFail(){
         for (int i = 0; i < 40; ++i){
             super.nextCycle();
         }
     }
 
+    /**
+     * Makes the thread redo the last instruction
+     */
     private void startOver(){
-        this.threadContext.setPc(this.threadContext.getPc() + 4);
+        this.threadContext.setPc(this.threadContext.getPc() - 4);
     }
 
+    /**
+     * Checks if the other cache has the desired block
+     *
+     * @param blockLabel Label of the desired block
+     * @param isLoad If it's a load instruction
+     * @return True if was executed successfully
+     */
     private boolean manageCheckOtherCache(int blockLabel, boolean isLoad){
         boolean successful = true;
         if (this.simulation.tryLockDataCacheBlock(this.isSimpleCore, blockLabel)){
@@ -292,8 +340,29 @@ public class SimpleCore extends Core {
         return successful;
     }
 
+    /**
+     * Manages the end of the quantum
+     */
     private void manageQuantumEnd(){
+        this.threadContext.setPc(this.threadContext.getPc() - 4);
         super.simulation.addContext(this.threadContext);
         this.threadContext = super.simulation.getNextContext();
+        if (this.threadContext.getStartingCycle() == -1){
+            this.threadContext.setStartingCycle(super.getClock());
+        }
+        this.threadContext.setRemainingQuantum(super.quantum);
+    }
+
+    /**
+     * Get the name of the running thread
+     *
+     * @return String
+     */
+    public String getThreadName(){
+        if (this.threadContext != null){
+            return this.threadContext.getThreadName();
+        } else {
+            return "No hay hilo corriendo";
+        }
     }
 }

@@ -7,8 +7,11 @@ public class Context {
     private int startingCycle;
     private int finishingCycle;
     private int remainingQuantum;
+    private String threadName;
 
     public Context (){
+        this.startingCycle = -1;
+        this.finishingCycle = -1;
         this.pc = 0;
         this.registers = new int[32];
         for (int i = 0; i < this.registers.length; ++i){
@@ -54,5 +57,23 @@ public class Context {
 
     public void setFinishingCycle(int finishingCycle) {
         this.finishingCycle = finishingCycle;
+    }
+
+    public String getThreadName() {
+        return threadName;
+    }
+
+    public void setThreadName(String threadName) {
+        this.threadName = threadName;
+    }
+
+    public String toString(){
+        String context = "--- Contexto hilo " + this.threadName + " ---\n";
+        for (int i = 0; i < this.registers.length; ++i){
+            context += this.registers[i] + " ";
+        }
+        context += "\nDuracion: " + (this.finishingCycle - this.startingCycle) + "\n";
+        context += "--- Fin de contexto hilo " + this.threadName + " ---\n";
+        return context;
     }
 }
