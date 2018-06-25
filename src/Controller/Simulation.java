@@ -173,7 +173,6 @@ public class Simulation {
             }
             this.tickBarrier();
         }
-        System.out.println("salio");
     }
 
     /**

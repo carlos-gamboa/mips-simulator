@@ -112,12 +112,8 @@ public class DualCore extends Core {
             while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
                 instruction = this.checkReservedInstructionPosition(this.thread1Context,this.thread1Context.getPc(), true);
                 if (instruction != null) {
-                    System.out.println("Instruccion1: " + instruction.toString());
                     this.thread1Context.setPc(this.thread1Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread1Context, true);
-                }
-                if (super.clock == 7500){
-                    System.out.println("hola");
                 }
             }
             if (super.isRunning) {
@@ -151,12 +147,8 @@ public class DualCore extends Core {
             while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
                 instruction = checkReservedInstructionPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
-                    System.out.println("Instruccion2: " + instruction.toString());
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
-                }
-                if (super.clock == 7500){
-                    System.out.println("hola");
                 }
             }
             if (super.isRunning) {

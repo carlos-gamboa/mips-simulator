@@ -34,11 +34,11 @@ public class SimpleCore extends Core {
             super.setRunning(false);
         }
         while (super.isRunning()){
-            do {
-                instruction = this.getInstruction(this.threadContext.getPc());
-            } while (instruction == null);
-            this.threadContext.setPc(this.threadContext.getPc() + 4);
-            this.manageInstruction(instruction);
+            instruction = this.getInstruction(this.threadContext.getPc());
+            if (instruction != null) {
+                this.threadContext.setPc(this.threadContext.getPc() + 4);
+                this.manageInstruction(instruction);
+            }
         }
         while(super.simulation.isOtherCoreRunning(super.isSimpleCore)){
             this.nextCycle();
