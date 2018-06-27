@@ -70,13 +70,16 @@ public class FileReader {
     }
 
     public void findFiles(){
+
+        File file = new File(".");
+
         FilenameFilter filter = new FilenameFilter(){
             public boolean accept(File dir, String fileName) {
                 return fileName.endsWith("txt");
             }
         };
 
-        File file = new File("C:/Users/b57594/IdeaProjects/mips-simulator");
+
         this.textfiles = file.list(filter);
         if(this.textfiles != null){
             this.threadStartingPoint = new int[this.textfiles.length];
