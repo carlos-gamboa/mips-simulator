@@ -184,7 +184,6 @@ public class Simulation {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
-            e.printStackTrace();
         } catch (TimeoutException e){
         }
     }

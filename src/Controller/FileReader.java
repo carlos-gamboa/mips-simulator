@@ -19,11 +19,11 @@ public class FileReader {
     private int fileNumber;
 
 
-    public FileReader(String[] textfiles) {
+    public FileReader() {
 
-        this.textfiles = textfiles;
+        //this.textfiles = textfiles;
         this.instructions = new ArrayList<Instruction>();
-        this.threadStartingPoint = new int[textfiles.length];
+        //this.threadStartingPoint = new int[textfiles.length];
         this.instructionNumber = 0;
         this.fileNumber = 0;
 
@@ -69,13 +69,30 @@ public class FileReader {
         this.fileNumber = fileNumber;
     }
 
+    public void findFiles(){
+        FilenameFilter filter = new FilenameFilter(){
+            public boolean accept(File dir, String fileName) {
+                return fileName.endsWith("txt");
+            }
+        };
+
+        File file = new File("C:/Users/b57594/IdeaProjects/mips-simulator");
+        this.textfiles = file.list(filter);
+        if(this.textfiles != null){
+            this.threadStartingPoint = new int[this.textfiles.length];
+        }
+        else {
+            System.out.println("No se encontraron archivos.");
+        }
+    }
+
     /**
      * Reads the thread files and stores the instructions as well as the PC.
      *
      * @throws IOException
      */
     public void readThreads() throws IOException {
-
+        this.findFiles();
         this.threadStartingPoint[0]=0;
         for (String filename : this.textfiles)
         {
