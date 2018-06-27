@@ -62,10 +62,6 @@ public class MainMemory {
             memory += this.dataBlocks[i].toString();
             memory += "\n";
         }
-        for (int i = 0; i < this.instructionBlocks.length; ++i){
-            memory += this.instructionBlocks[i].toString();
-            memory += "\n";
-        }
         memory += "--- FIN DE MEMORIA PRINCIPAL ---";
         return memory;
     }

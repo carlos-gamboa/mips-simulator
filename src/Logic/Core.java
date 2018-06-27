@@ -4,6 +4,8 @@ import Controller.Simulation;
 import Storage.*;
 
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class Core implements Runnable {
 
@@ -95,6 +97,14 @@ public class Core implements Runnable {
      * Advances the core clock and waits fot the barrier
      */
     public void nextCycle(){
+        try {
+            this.simulation.getBarrier().await(1000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (BrokenBarrierException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e){
+        }
         if (!this.isSimpleCore){
             if (this.tick){
                 this.clock++;
@@ -104,13 +114,6 @@ public class Core implements Runnable {
             }
         } else {
             this.clock++;
-        }
-        try {
-            this.simulation.getBarrier().await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
-            e.printStackTrace();
         }
     }
 

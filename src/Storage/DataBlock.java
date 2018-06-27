@@ -10,7 +10,7 @@ public class DataBlock extends Block {
         this.blockStatus = CacheStatus.Invalid;
         this.data = new int[4];
         for (int i = 0; i < 4; ++i){
-            this.data[i] = 0;
+            this.data[i] = 1;
         }
     }
 

@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Simulation {
@@ -152,8 +154,8 @@ public class Simulation {
     public void start(){
         this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
-        this.dualCore.start();
         this.simpleCore.start();
+        this.dualCore.start();
 
         while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
             System.out.println(this.getCurrentThreads());
@@ -168,11 +170,8 @@ public class Simulation {
                 catch(Exception e) {
 
                 }
-                this.tickBarrier();
             }
-            else {
-                this.tickBarrier();
-            }
+            this.tickBarrier();
         }
     }
 
@@ -181,11 +180,12 @@ public class Simulation {
      */
     private void tickBarrier(){
         try {
-            this.barrier.await();
+            this.barrier.await(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
             e.printStackTrace();
+        } catch (TimeoutException e){
         }
     }
 
@@ -208,7 +208,7 @@ public class Simulation {
      *
      * @param instructions ArrayList with all the instructions
      */
-    public void addInstructionsToMemory(ArrayList<Instruction> instructions){
+    public synchronized void addInstructionsToMemory(ArrayList<Instruction> instructions){
 
         int blockNumber = 0;
         int instructionNumber = 0;
@@ -254,7 +254,7 @@ public class Simulation {
      * @param threadStartingPoint PC of each thread
      * @param threadNames Name of each thread
      */
-    public void setContexts(int [] threadStartingPoint, String[] threadNames){
+    public synchronized void setContexts(int [] threadStartingPoint, String[] threadNames){
 
         //We calculate the corresponding adress in memory by using the
         //equation address = 384 + (instructionNumber * 4)
@@ -277,7 +277,7 @@ public class Simulation {
      * @param blockLabel Label of the block to be returned
      * @return DataBlock of the desired label
      */
-    public DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
+    public synchronized DataBlock getDataBlockFromOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
             return this.dualCore.getDataCache().getBlock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel));
         }
@@ -293,7 +293,7 @@ public class Simulation {
      * @param blockLabel Label of the block you want to check
      * @return True if the cache has the block
      */
-    public boolean checkDataBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
+    public synchronized boolean checkDataBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
             return this.dualCore.getDataCache().hasBlock(blockLabel);
         }
@@ -309,7 +309,7 @@ public class Simulation {
      * @param blockLabel Label of the block you want to change the status
      * @param status New status for the block
      */
-    public void changeDataBlockStatusFromOtherCache(boolean isSimpleCore, int blockLabel, CacheStatus status){
+    public synchronized void changeDataBlockStatusFromOtherCache(boolean isSimpleCore, int blockLabel, CacheStatus status){
         if (isSimpleCore){
             this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
         }
@@ -324,11 +324,11 @@ public class Simulation {
      * @param block Block you want to copy
      * @param label Label of the block
      */
-    public void saveDataBlockToMainMemory(DataBlock block, int label){
+    public synchronized void saveDataBlockToMainMemory(DataBlock block, int label){
         this.mainMemory.setDataBlock(block, label);
     }
 
-    public void invalidateBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
+    public synchronized void invalidateBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
             this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
         }
@@ -343,7 +343,7 @@ public class Simulation {
      * @param isSimpleCore If the core only has 1 thread
      * @return True if the other core is still running
      */
-    public boolean isOtherCoreRunning(boolean isSimpleCore){
+    public synchronized boolean isOtherCoreRunning(boolean isSimpleCore){
         if (isSimpleCore){
             return this.dualCore.isRunning();
         }

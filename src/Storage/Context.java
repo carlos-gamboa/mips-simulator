@@ -13,6 +13,7 @@ public class Context {
         this.startingCycle = -1;
         this.finishingCycle = -1;
         this.pc = 0;
+        this.threadName = "";
         this.registers = new int[32];
         for (int i = 0; i < this.registers.length; ++i){
             this.registers[i] = 0;

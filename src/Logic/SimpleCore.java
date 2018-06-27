@@ -34,11 +34,11 @@ public class SimpleCore extends Core {
             super.setRunning(false);
         }
         while (super.isRunning()){
-            do {
-                instruction = this.getInstruction(this.threadContext.getPc());
-            } while (instruction == null);
-            this.threadContext.setPc(this.threadContext.getPc() + 4);
-            this.manageInstruction(instruction);
+            instruction = this.getInstruction(this.threadContext.getPc());
+            if (instruction != null) {
+                this.threadContext.setPc(this.threadContext.getPc() + 4);
+                this.manageInstruction(instruction);
+            }
         }
         while(super.simulation.isOtherCoreRunning(super.isSimpleCore)){
             this.nextCycle();
@@ -59,6 +59,7 @@ public class SimpleCore extends Core {
     private void manageFIN (){
         this.threadContext.setFinishingCycle(super.getClock());
         super.simulation.addFinishedContext(this.threadContext);
+        this.threadContext = null;
         if (!super.simulation.areMoreContexts()){
             super.setRunning(false);
         }
@@ -116,7 +117,9 @@ public class SimpleCore extends Core {
                     this.manageFIN();
                     break;
             }
-            this.getCurrentThread().setRemainingQuantum(this.getCurrentThread().getRemainingQuantum() - 1);
+            if (this.threadContext != null) {
+                this.getCurrentThread().setRemainingQuantum(this.getCurrentThread().getRemainingQuantum() - 1);
+            }
         } else {
             this.manageQuantumEnd();
         }
