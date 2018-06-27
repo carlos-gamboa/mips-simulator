@@ -132,7 +132,7 @@ public class DualCore extends Core {
     private void runThread2(){
         Instruction instruction;
         while (this.thread2Status == ThreadStatus.Null){
-            //Waits until the Thread 1 allows Thread 2 to start
+            super.nextCycle();
         }
         //Checks if there are more contexts in the queue
         if (super.simulation.areMoreContexts()) {
@@ -149,6 +149,10 @@ public class DualCore extends Core {
                 if (instruction != null) {
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
+                }
+                if (super.clock > 10000)
+                {
+                    System.out.println("hola");
                 }
             }
             if (super.isRunning) {
@@ -207,9 +211,6 @@ public class DualCore extends Core {
                 case 63:
                     this.manageFIN(isThread1);
                     break;
-            }
-            if ((isThread1 && this.thread1Context != null) || (!isThread1 && this.thread2Context != null)) {
-                context.setRemainingQuantum(context.getRemainingQuantum() - 1);
             }
         } else {
             this.manageQuantumEnd(isThread1);
@@ -298,6 +299,7 @@ public class DualCore extends Core {
                 if (blockStatus == CacheStatus.Modified || blockStatus == CacheStatus.Shared){
                     this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                     context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
+                    this.substractQuantum(context);
                     super.nextCycle();
                 }
                 else {
@@ -305,6 +307,7 @@ public class DualCore extends Core {
                         boolean result = this.manageCheckOtherDataCache(blockLabel, true, context, isThread1);
                         if (result){
                             this.finishLoadWord(context, blockLabel, blockWord, destinyRegister, isThread1);
+                            this.substractQuantum(context);
                             this.nextCycle();
                         }
                     }
@@ -324,6 +327,7 @@ public class DualCore extends Core {
                     boolean result = this.manageCheckOtherDataCache(blockLabel, true, context, isThread1);
                     if (result){
                         this.finishLoadWord(context, blockLabel, blockWord, destinyRegister, isThread1);
+                        this.substractQuantum(context);
                         this.nextCycle();
                     }
                 }
@@ -355,7 +359,6 @@ public class DualCore extends Core {
         this.dataBusReserved = 0;
         this.checkIfCanContinue(isThread1);
         context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
-
     }
 
     /**
@@ -380,25 +383,27 @@ public class DualCore extends Core {
                                 this.simulation.invalidateBlockOnOtherCache(this.isSimpleCore, blockLabel);
                             }
                             this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                        } else {
-                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.simulation.getDataBus().unlock();
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
+                            super.substractQuantum(context);
+                            this.nextCycle();
+                        } else {
+                            this.simulation.getDataBus().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
                             this.startOver(context);
                         }
-                        this.simulation.getDataBus().unlock();
                     }
                     else {
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         this.startOver(context);
                     }
-                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
-                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
-                    this.nextCycle();
                 }
                 else if (blockStatus == CacheStatus.Modified){
                     this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                    this.substractQuantum(context);
                     this.nextCycle();
                 }
                 else {
@@ -406,6 +411,7 @@ public class DualCore extends Core {
                         boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                         if (result){
                             this.finishStoreWord(context, blockLabel, blockWord, destinyRegister, isThread1);
+                            this.substractQuantum(context);
                             this.nextCycle();
                         }
                     }
@@ -425,6 +431,7 @@ public class DualCore extends Core {
                     boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                     if (result){
                         this.finishStoreWord(context, blockLabel, blockWord, destinyRegister, isThread1);
+                        this.substractQuantum(context);
                         this.nextCycle();
                     }
                 }

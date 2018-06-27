@@ -117,9 +117,6 @@ public class SimpleCore extends Core {
                     this.manageFIN();
                     break;
             }
-            if (this.threadContext != null) {
-                this.getCurrentThread().setRemainingQuantum(this.getCurrentThread().getRemainingQuantum() - 1);
-            }
         } else {
             this.manageQuantumEnd();
         }
@@ -218,22 +215,23 @@ public class SimpleCore extends Core {
                                 this.simulation.invalidateBlockOnOtherCache(this.isSimpleCore, blockLabel);
                             }
                             this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                        } else {
-                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.simulation.getDataBus().unlock();
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
+                            this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
+                            super.substractQuantum(context);
+                            this.nextCycle();
+                        } else {
+                            this.simulation.getDataBus().unlock();
+                            this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                             this.nextCycle();
                             this.startOver();
                         }
-                        this.simulation.getDataBus().unlock();
                     }
                     else {
                         this.dataCache.getLock(this.dataCache.calculateIndexByLabel(blockLabel)).unlock();
                         this.nextCycle();
                         this.startOver();
                     }
-                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
-                    this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
-                    this.nextCycle();
                 }
                 else if (blockStatus == CacheStatus.Modified){
                     this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));

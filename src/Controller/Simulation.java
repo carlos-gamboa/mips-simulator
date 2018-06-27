@@ -52,7 +52,7 @@ public class Simulation {
     }
 
     public synchronized void addContext(Context context){
-        this.threadQueue.push(context);
+        this.threadQueue.addLast(context);
     }
 
     public synchronized void addFinishedContext(Context context){
@@ -139,13 +139,6 @@ public class Simulation {
 
     public void setSlowMode(boolean slowMode) {
         this.slowMode = slowMode;
-
-        if (!slowMode){
-            this.barrier = new CyclicBarrier(3);
-        }
-        else{
-            this.barrier = new CyclicBarrier(4); //Hay una barrera más que es la del key listener
-        }
     }
 
     /**
@@ -180,12 +173,10 @@ public class Simulation {
      */
     private void tickBarrier(){
         try {
-            this.barrier.await(1000, TimeUnit.MILLISECONDS);
+            this.barrier.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e){
         }
     }
 

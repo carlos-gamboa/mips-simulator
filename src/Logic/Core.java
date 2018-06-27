@@ -97,14 +97,6 @@ public class Core implements Runnable {
      * Advances the core clock and waits fot the barrier
      */
     public void nextCycle(){
-        try {
-            this.simulation.getBarrier().await(1000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (BrokenBarrierException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e){
-        }
         if (!this.isSimpleCore){
             if (this.tick){
                 this.clock++;
@@ -115,6 +107,13 @@ public class Core implements Runnable {
         } else {
             this.clock++;
         }
+        try {
+            this.simulation.getBarrier().await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (BrokenBarrierException e) {
+        }
+
     }
 
     /**
@@ -168,6 +167,7 @@ public class Core implements Runnable {
      */
     public void manageDADDI(Context context, int destinyRegister, int sourceRegister, int immediate){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister) + immediate);
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -181,6 +181,7 @@ public class Core implements Runnable {
      */
     public void manageDADD(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) + context.getRegister(sourceRegister2));
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -194,6 +195,7 @@ public class Core implements Runnable {
      */
     public void manageDSUB(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) - context.getRegister(sourceRegister2));
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -207,6 +209,7 @@ public class Core implements Runnable {
      */
     public void manageDMUL(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) * context.getRegister(sourceRegister2));
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -220,6 +223,7 @@ public class Core implements Runnable {
      */
     public void manageDDIV(Context context, int destinyRegister, int sourceRegister1, int sourceRegister2){
         context.setRegister(destinyRegister, context.getRegister(sourceRegister1) / context.getRegister(sourceRegister2));
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -234,6 +238,7 @@ public class Core implements Runnable {
         if(context.getRegister(sourceRegister) == 0){
             context.setPc(context.getPc() + (4 * immediate));
         }
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -248,6 +253,7 @@ public class Core implements Runnable {
         if(context.getRegister(sourceRegister) != 0){
             context.setPc(context.getPc() + (4 * immediate));
         }
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -261,6 +267,7 @@ public class Core implements Runnable {
         //Copy the address of the next instruction on register 31
         context.setRegister(31, context.getPc());
         context.setPc(context.getPc() + immediate);
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -272,6 +279,7 @@ public class Core implements Runnable {
      */
     public void manageJR(Context context, int sourceRegister){
         context.setPc(context.getRegister(sourceRegister));
+        this.substractQuantum(context);
         this.nextCycle();
     }
 
@@ -292,5 +300,16 @@ public class Core implements Runnable {
      */
     public void copyFromMemoryToInstructionCache(int label){
         this.instructionCache.setBlock(this.simulation.getMainMemory().getInstructionBlock(label), this.instructionCache.calculateIndexByLabel(label));
+    }
+
+    /**
+     * Substract 1 cycle from the quantum
+     *
+     * @param context Context of the thread
+     */
+    public void substractQuantum(Context context){
+        if (context != null){
+            context.setRemainingQuantum(context.getRemainingQuantum() - 1);
+        }
     }
 }
