@@ -8,8 +8,8 @@ public class Controller {
     Simulation simulation;
     Terminal terminal;
 
-    public Controller(String[] arguments) {
-        this.fileReader = new FileReader(arguments);
+    public Controller() {
+        this.fileReader = new FileReader();
         this.simulation = new Simulation();
         this.terminal = new Terminal();
     }
