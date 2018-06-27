@@ -150,10 +150,6 @@ public class DualCore extends Core {
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
                 }
-                if (super.clock > 10000)
-                {
-                    System.out.println("hola");
-                }
             }
             if (super.isRunning) {
                 this.nextCycle();
@@ -662,6 +658,13 @@ public class DualCore extends Core {
      */
     private void checkIfCanContinue(boolean isThread1){
         if (isThread1){
+            if (this.dataBusReserved == 1){
+                this.dataBusReserved = 0;
+                this.thread1DataReservedPosition = -1;
+            } else if (this.instructionBusReserved == 1){
+                this.instructionBusReserved = 0;
+                this.thread1InstructionReservedPosition = -1;
+            }
             if (this.thread2Status == ThreadStatus.Finished){
                 this.thread1Status = ThreadStatus.Running;
             } else {
@@ -672,12 +675,16 @@ public class DualCore extends Core {
                         if (this.thread2Status == ThreadStatus.Running || this.thread2Status == ThreadStatus.Waiting) {
                             this.thread2Status = ThreadStatus.Waiting;
                             this.thread1Status = ThreadStatus.Running;
-                        } else {
+                        }
+                        else if(this.thread2Status == ThreadStatus.DataCacheFail || this.thread2Status == ThreadStatus.InstructionCacheFail){
+                            this.thread1Status = ThreadStatus.Running;
+                        }
+                        else {
                             this.thread1Status = ThreadStatus.Waiting;
                         }
                     } else {
                         this.thread1Status = ThreadStatus.Waiting;
-                        while (this.thread1Status != ThreadStatus.Running && this.thread1Status != ThreadStatus.DataCacheFailRunning && this.thread1Status != ThreadStatus.InstructionCacheFailRunning) {
+                        while (this.thread1Status != ThreadStatus.Running) {
                             super.nextCycle();
                         }
                     }
@@ -685,6 +692,13 @@ public class DualCore extends Core {
                 }
             }
         } else {
+            if (this.dataBusReserved == 2){
+                this.dataBusReserved = 0;
+                this.thread2DataReservedPosition = -1;
+            } else if (this.instructionBusReserved == 2){
+                this.instructionBusReserved = 0;
+                this.thread2InstructionReservedPosition = -1;
+            }
             if (this.thread1Status == ThreadStatus.Finished){
                 this.thread2Status = ThreadStatus.Running;
             } else {
@@ -695,12 +709,16 @@ public class DualCore extends Core {
                         if (this.thread1Status == ThreadStatus.Running || this.thread1Status == ThreadStatus.Waiting) {
                             this.thread1Status = ThreadStatus.Waiting;
                             this.thread2Status = ThreadStatus.Running;
-                        } else {
+                        }
+                        else if(this.thread1Status == ThreadStatus.DataCacheFail || this.thread1Status == ThreadStatus.InstructionCacheFail){
+                            this.thread1Status = ThreadStatus.Running;
+                        }
+                        else {
                             this.thread2Status = ThreadStatus.Waiting;
                         }
                     } else {
                         this.thread2Status = ThreadStatus.Waiting;
-                        while (this.thread2Status != ThreadStatus.Running && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.thread2Status != ThreadStatus.InstructionCacheFailRunning) {
+                        while (this.thread2Status != ThreadStatus.Running) {
                             super.nextCycle();
                         }
                     }

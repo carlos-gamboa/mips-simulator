@@ -173,10 +173,11 @@ public class Simulation {
      */
     private void tickBarrier(){
         try {
-            this.barrier.await();
+            this.barrier.await(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
+        } catch (TimeoutException e){
         }
     }
 
@@ -351,7 +352,7 @@ public class Simulation {
     public String getContextsString(){
         String contexts = "";
         while (!this.finishedThreads.isEmpty()){
-            contexts += this.finishedThreads.pop().toString();
+            contexts += this.finishedThreads.pop().toString() + "\n";
         }
         return contexts;
     }
