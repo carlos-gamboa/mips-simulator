@@ -108,7 +108,13 @@ public class Core implements Runnable {
             this.clock++;
         }
         try {
-            this.simulation.getBarrier().await(1000, TimeUnit.MILLISECONDS);
+            if(!this.simulation.isSlowMode()){
+                this.simulation.getBarrier().await(1000, TimeUnit.MILLISECONDS);
+            }
+            else{
+                this.simulation.getBarrier().await();
+            }
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {

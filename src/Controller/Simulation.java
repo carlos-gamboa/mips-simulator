@@ -154,6 +154,7 @@ public class Simulation {
             System.out.println(this.getCurrentThreads());
             ++this.clock;
             if(slowMode && this.clock % 20 == 0){
+
                 this.printCurrentStatus();
                 System.out.println("\nPresione Enter para continuar");
                 try
@@ -163,8 +164,17 @@ public class Simulation {
                 catch(Exception e) {
 
                 }
+                try {
+                    this.barrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+            }else{
+                this.tickBarrier();
             }
-            this.tickBarrier();
+
         }
     }
 
