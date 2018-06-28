@@ -52,7 +52,7 @@ public class Simulation {
     }
 
     public synchronized void addContext(Context context){
-        this.threadQueue.push(context);
+        this.threadQueue.addLast(context);
     }
 
     public synchronized void addFinishedContext(Context context){
@@ -139,13 +139,6 @@ public class Simulation {
 
     public void setSlowMode(boolean slowMode) {
         this.slowMode = slowMode;
-
-        if (!slowMode){
-            this.barrier = new CyclicBarrier(3);
-        }
-        else{
-            this.barrier = new CyclicBarrier(4); //Hay una barrera más que es la del key listener
-        }
     }
 
     /**
@@ -161,6 +154,7 @@ public class Simulation {
             System.out.println(this.getCurrentThreads());
             ++this.clock;
             if(slowMode && this.clock % 20 == 0){
+
                 this.printCurrentStatus();
                 System.out.println("\nPresione Enter para continuar");
                 try
@@ -170,8 +164,17 @@ public class Simulation {
                 catch(Exception e) {
 
                 }
+                try {
+                    this.barrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+            }else{
+                this.tickBarrier();
             }
-            this.tickBarrier();
+
         }
     }
 
@@ -184,7 +187,6 @@ public class Simulation {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
-            e.printStackTrace();
         } catch (TimeoutException e){
         }
     }
@@ -360,7 +362,7 @@ public class Simulation {
     public String getContextsString(){
         String contexts = "";
         while (!this.finishedThreads.isEmpty()){
-            contexts += this.finishedThreads.pop().toString();
+            contexts += this.finishedThreads.pop().toString() + "\n";
         }
         return contexts;
     }
