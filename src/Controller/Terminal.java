@@ -12,13 +12,6 @@ public class Terminal {
         br = new BufferedReader(new InputStreamReader(System.in));
     }
 
-//    public String getFiles() throws IOException {
-//
-//        //System.out.println("Digite el nombre de los hilillos separados por un espacio");
-//        //String s = br.readLine();
-//       return s;
-//    }
-
     /**
      * Asks the user for the quantum
      *
@@ -38,7 +31,8 @@ public class Terminal {
      */
     public boolean getSimulationMode() throws IOException {
         System.out.println("Digite \"Si\" si desea ver la simulación en modo lento, de lo contrario la verá en modo rápido.");
-        if (br.readLine().equals("Si")){
+        String line = br.readLine();
+        if (line.equals("Si")|| line.equals("si")){
             return true;
         }
         else{

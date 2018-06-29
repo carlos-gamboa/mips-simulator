@@ -4,6 +4,8 @@ import Logic.DualCore;
 import Logic.SimpleCore;
 import Storage.*;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -26,6 +28,8 @@ public class Simulation {
 
     private DualCore dualCore;
     private SimpleCore simpleCore;
+
+    BufferedReader br;
 
     private int clock;
     private int quantum;
@@ -154,12 +158,14 @@ public class Simulation {
             System.out.println(this.getCurrentThreads());
             ++this.clock;
             if(slowMode && this.clock % 20 == 0){
-
                 this.printCurrentStatus();
-                System.out.println("\nPresione Enter para continuar");
+                System.out.println("\nPresione Enter para continuar o f para finalizar");
                 try
                 {
-                    System.in.read();
+                    String line = br.readLine();
+                    if (line.equals("f")){
+                        this.slowMode = false;
+                    }
                 }
                 catch(Exception e) {
 
