@@ -679,7 +679,7 @@ public class DualCore extends Core {
                         else if(this.thread2Status == ThreadStatus.DataCacheFail || this.thread2Status == ThreadStatus.InstructionCacheFail){
                             this.thread1Status = ThreadStatus.Running;
                         }
-                        else {
+                        else if (this.thread2Status != ThreadStatus.Finished) {
                             this.thread1Status = ThreadStatus.Waiting;
                         }
                     } else {
@@ -713,7 +713,7 @@ public class DualCore extends Core {
                         else if(this.thread1Status == ThreadStatus.DataCacheFail || this.thread1Status == ThreadStatus.InstructionCacheFail){
                             this.thread1Status = ThreadStatus.Running;
                         }
-                        else {
+                        else if (this.thread1Status != ThreadStatus.Finished){
                             this.thread2Status = ThreadStatus.Waiting;
                         }
                     } else {
@@ -741,6 +741,7 @@ public class DualCore extends Core {
                 this.thread1Context.setStartingCycle(super.getClock());
             }
             this.thread1Context.setRemainingQuantum(super.quantum);
+            this.oldestThread = 2;
         } else {
             this.thread2Context.setPc(this.thread2Context.getPc() - 4);
             super.simulation.addContext(this.thread2Context);
@@ -749,6 +750,7 @@ public class DualCore extends Core {
                 this.thread2Context.setStartingCycle(super.getClock());
             }
             this.thread2Context.setRemainingQuantum(super.quantum);
+            this.oldestThread = 1;
         }
     }
 

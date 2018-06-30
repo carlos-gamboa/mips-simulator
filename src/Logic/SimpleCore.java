@@ -16,6 +16,11 @@ public class SimpleCore extends Core {
         this.thread = new Thread(this, "Thread 0");
     }
 
+    public SimpleCore(Simulation simulation, int quantum, boolean a){
+        super(simulation, 4, a, quantum);
+        this.thread = new Thread(this, "Thread 1");
+    }
+
     public void start(){
         this.thread.start();
     }
