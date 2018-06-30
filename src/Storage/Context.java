@@ -35,6 +35,12 @@ public class Context {
     }
 
     public void setRegister(int i, int value) {
+        if (this.threadName.equals("2.txt"))
+        {
+            if (i == 5 && value == -1){
+                System.out.println("hola");
+            }
+        }
         this.registers[i] = value;
     }
 
@@ -84,6 +90,7 @@ public class Context {
             context += this.registers[i] + " ";
         }
         context += "\nDuracion: " + (this.finishingCycle - this.startingCycle) + "\n";
+        context += "\nPC: " + this.pc + "\n";
         context += "--- Fin de contexto hilo " + this.threadName + " ---\n";
         return context;
     }

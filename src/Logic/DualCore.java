@@ -112,6 +112,8 @@ public class DualCore extends Core {
             while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
                 instruction = this.checkReservedInstructionPosition(this.thread1Context,this.thread1Context.getPc(), true);
                 if (instruction != null) {
+                    System.out.println(instruction.toString());
+                    System.out.println(this.thread1Context.toString());
                     this.thread1Context.setPc(this.thread1Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread1Context, true);
                 }
@@ -148,6 +150,8 @@ public class DualCore extends Core {
             while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
                 instruction = checkReservedInstructionPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
+                    System.out.println(instruction.toString());
+                    System.out.println(this.thread2Context.toString());
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
                 }
@@ -318,8 +322,9 @@ public class DualCore extends Core {
             else {
                 if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
-                        this.manageDataCacheFail(isThread1, blockLabel);
+                        this.manageDataCacheFail(isThread1);
                         this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                        this.checkIfCanContinue(isThread1, false);
                     }
                     boolean result = this.manageCheckOtherDataCache(blockLabel, true, context, isThread1);
                     if (result){
@@ -354,7 +359,7 @@ public class DualCore extends Core {
         this.thread1DataReservedPosition = -1;
         this.thread2DataReservedPosition = -1;
         this.dataBusReserved = 0;
-        this.checkIfCanContinue(isThread1);
+        this.checkIfCanContinue(isThread1, true);
         context.setRegister(destinyRegister, this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getData(blockWord));
     }
 
@@ -424,8 +429,9 @@ public class DualCore extends Core {
             else {
                 if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
-                        this.manageDataCacheFail(isThread1, blockLabel);
+                        this.manageDataCacheFail(isThread1);
                         this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                        this.checkIfCanContinue(isThread1, false);
                     }
                     boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
                     if (result){
@@ -460,7 +466,7 @@ public class DualCore extends Core {
         this.thread1DataReservedPosition = -1;
         this.thread2DataReservedPosition = -1;
         this.dataBusReserved = 0;
-        this.checkIfCanContinue(isThread1);
+        this.checkIfCanContinue(isThread1, true);
         this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setData(blockWord, context.getRegister(destinyRegister));
         this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Modified);
 
@@ -494,11 +500,11 @@ public class DualCore extends Core {
                         this.simulation.changeDataBlockStatusFromOtherCache(this.isSimpleCore, blockLabel, CacheStatus.Invalid);
                     }
                     this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                    this.manageDataCacheFail(isThread1, blockLabel);
+                    this.manageDataCacheFail(isThread1);
                     super.copyFromMemoryToDataCache(blockLabel);
                 }
                 else if (blockFromOtherCache.getBlockStatus() == CacheStatus.Modified){
-                    this.manageDataCacheFail(isThread1, blockLabel);
+                    this.manageDataCacheFail(isThread1);
                     this.simulation.saveDataBlockToMainMemory(blockFromOtherCache, blockLabel);
                     super.copyFromMemoryToDataCache(blockLabel);
                     if (isLoad){
@@ -510,13 +516,13 @@ public class DualCore extends Core {
                 }
                 else {
                     this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                    this.manageDataCacheFail(isThread1, blockLabel);
+                    this.manageDataCacheFail(isThread1);
                     super.copyFromMemoryToDataCache(blockLabel);
                 }
             }
             else {
                 this.simulation.unlockDataCacheBlock(this.isSimpleCore, blockLabel);
-                this.manageDataCacheFail(isThread1, blockLabel);
+                this.manageDataCacheFail(isThread1);
                 super.copyFromMemoryToDataCache(blockLabel);
             }
         }
@@ -534,9 +540,8 @@ public class DualCore extends Core {
      * Manages a Data cache fail
      *
      * @param isThread1 If the thread is thread 1
-     * @param blockLabel Label of the block
      */
-    private void manageDataCacheFail(boolean isThread1, int blockLabel){
+    private void manageDataCacheFail(boolean isThread1){
         if (isThread1){
             this.thread1Status = ThreadStatus.DataCacheFail;
             if (this.thread2Status !=   ThreadStatus.Finished) {
@@ -659,15 +664,17 @@ public class DualCore extends Core {
      *
      * @param isThread1 If the thread is thread 1
      */
-    private void checkIfCanContinue(boolean isThread1){
+    private void checkIfCanContinue(boolean isThread1, boolean isFinish){
         if (isThread1){
 
-            if (this.dataBusReserved == 1){
-                this.dataBusReserved = 0;
-                this.thread1DataReservedPosition = -1;
-            } else if (this.instructionBusReserved == 1){
-                this.instructionBusReserved = 0;
-                this.thread1InstructionReservedPosition = -1;
+            if (isFinish) {
+                if (this.dataBusReserved == 1) {
+                    this.dataBusReserved = 0;
+                    this.thread1DataReservedPosition = -1;
+                } else if (this.instructionBusReserved == 1) {
+                    this.instructionBusReserved = 0;
+                    this.thread1InstructionReservedPosition = -1;
+                }
             }
 
             if (this.thread2Status == ThreadStatus.Finished){
@@ -697,12 +704,14 @@ public class DualCore extends Core {
             }
         } else {
 
-            if (this.dataBusReserved == 2){
-                this.dataBusReserved = 0;
-                this.thread2DataReservedPosition = -1;
-            } else if (this.instructionBusReserved == 2){
-                this.instructionBusReserved = 0;
-                this.thread2InstructionReservedPosition = -1;
+            if (isFinish) {
+                if (this.dataBusReserved == 2) {
+                    this.dataBusReserved = 0;
+                    this.thread2DataReservedPosition = -1;
+                } else if (this.instructionBusReserved == 2) {
+                    this.instructionBusReserved = 0;
+                    this.thread2InstructionReservedPosition = -1;
+                }
             }
 
             if (this.thread1Status == ThreadStatus.Finished){
@@ -798,7 +807,7 @@ public class DualCore extends Core {
                         this.thread1InstructionReservedPosition = -1;
                         this.thread2InstructionReservedPosition = -1;
                         this.instructionBusReserved = 0;
-                        this.checkIfCanContinue(isThread1);
+                        this.checkIfCanContinue(isThread1, true);
                         block = this.instructionCache.getBlock(cacheIndex);
                         instruction = block.getValue(blockWord);
                     }
