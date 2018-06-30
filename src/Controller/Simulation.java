@@ -26,7 +26,7 @@ public class Simulation {
     private ReentrantLock instructionsBus;
     private MainMemory mainMemory;
 
-    private SimpleCore dualCore;
+    private DualCore dualCore;
     private SimpleCore simpleCore;
 
     BufferedReader br;
@@ -44,7 +44,7 @@ public class Simulation {
         this.instructionsBus = new ReentrantLock();
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
-        this.barrier = new CyclicBarrier(3);
+        this.barrier = new CyclicBarrier(4);
     }
 
     public CyclicBarrier getBarrier() {
@@ -87,11 +87,11 @@ public class Simulation {
         this.instructionsBus = instructionsBus;
     }
 
-    public SimpleCore getDualCore() {
+    public DualCore getDualCore() {
         return dualCore;
     }
 
-    public void setDualCore(SimpleCore dualCore) {
+    public void setDualCore(DualCore dualCore) {
         this.dualCore = dualCore;
     }
 
@@ -115,7 +115,7 @@ public class Simulation {
     }
 
     public boolean tryLockDataCacheBlock(boolean isSimpleCore, int blockLabel){
-        boolean result = false;
+        boolean result;
         if (isSimpleCore){
             result = this.dualCore.getDataCache().getLock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel)).tryLock();
         }
@@ -162,10 +162,10 @@ public class Simulation {
      * Starts the simulation
      */
     public void start(){
-        this.dualCore = new SimpleCore(this, this.quantum, false);
+        this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
-        this.simpleCore.start();
         this.dualCore.start();
+        this.simpleCore.start();
 
         while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
             System.out.println(this.getCurrentThreads());
@@ -392,8 +392,8 @@ public class Simulation {
      */
     public String getCurrentThreads(){
         String result = "Ciclo: " + this.clock + "\n";
-        result += "Nucleo 0, hilo 0: " + this.dualCore.getThreadName() + "\n";
-        //result += "Nucleo 0, hilo 1: " + this.dualCore.getThread2Name() + "\n";
+        result += "Nucleo 0, hilo 0: " + this.dualCore.getThread1Name() + "\n";
+        result += "Nucleo 0, hilo 1: " + this.dualCore.getThread2Name() + "\n";
         result += "Nucleo 1: " + this.simpleCore.getThreadName() + "\n";
         return result;
     }

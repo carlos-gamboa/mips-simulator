@@ -16,11 +16,6 @@ public class SimpleCore extends Core {
         this.thread = new Thread(this, "Thread 0");
     }
 
-    public SimpleCore(Simulation simulation, int quantum, boolean a){
-        super(simulation, 4, a, quantum);
-        this.thread = new Thread(this, "Thread 1");
-    }
-
     public void start(){
         this.thread.start();
     }
@@ -87,30 +82,39 @@ public class SimpleCore extends Core {
             switch (instruction.getOperationCode()){
                 case 8:
                     this.manageDADDI(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
+                    this.nextCycle();
                     break;
                 case 32:
                     this.manageDADD(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    this.nextCycle();
                     break;
                 case 34:
                     this.manageDSUB(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    this.nextCycle();
                     break;
                 case 12:
                     this.manageDMUL(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    this.nextCycle();
                     break;
                 case 14:
                     this.manageDDIV(this.threadContext, instruction.getImmediate(), instruction.getSourceRegister(), instruction.getDestinyRegister());
+                    this.nextCycle();
                     break;
                 case 4:
                     this.manageBEQZ(this.threadContext, instruction.getSourceRegister(), instruction.getImmediate());
+                    this.nextCycle();
                     break;
                 case 5:
                     this.manageBNEZ(this.threadContext, instruction.getSourceRegister(), instruction.getImmediate());
+                    this.nextCycle();
                     break;
                 case 3:
                     this.manageJAL(this.threadContext, instruction.getImmediate());
+                    this.nextCycle();
                     break;
                 case 2:
                     this.manageJR(this.threadContext, instruction.getSourceRegister());
+                    this.nextCycle();
                     break;
                 case 35:
                     this.manageLoadWord(this.threadContext, instruction.getDestinyRegister(), instruction.getSourceRegister(), instruction.getImmediate());
@@ -370,6 +374,7 @@ public class SimpleCore extends Core {
      */
     private void manageQuantumEnd(){
         this.threadContext.setPc(this.threadContext.getPc() - 4);
+        this.threadContext.setQuantumEnded(this.threadContext.getQuantumEnded() + 1);
         super.simulation.addContext(this.threadContext);
         this.threadContext = super.simulation.getNextContext();
         if (this.threadContext.getStartingCycle() == -1){

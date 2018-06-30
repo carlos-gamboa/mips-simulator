@@ -145,6 +145,9 @@ public class DualCore extends Core {
         }
         while (this.thread2Status != ThreadStatus.Finished) {
             while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
+                if (this.clock > 5050){
+                    System.out.println("hola");
+                }
                 instruction = checkReservedInstructionPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
@@ -635,7 +638,7 @@ public class DualCore extends Core {
      * @param isThread1 If the thread is thread 1
      * @return True if was reserved
      */
-    private boolean reserveDataPosition(int blockIndex, boolean isThread1){
+    private synchronized boolean reserveDataPosition(int blockIndex, boolean isThread1){
         boolean reserved = false;
         if (isThread1 && this.thread2Status != ThreadStatus.DataCacheFail && this.thread2Status != ThreadStatus.DataCacheFailRunning && this.dataBusReserved != 2){
             this.thread1Status = ThreadStatus.DataCacheFailRunning;
@@ -735,6 +738,7 @@ public class DualCore extends Core {
     private void manageQuantumEnd(boolean isThread1){
         if (isThread1){
             this.thread1Context.setPc(this.thread1Context.getPc() - 4);
+            this.thread1Context.setQuantumEnded(this.thread1Context.getQuantumEnded() + 1);
             super.simulation.addContext(this.thread1Context);
             this.thread1Context = super.simulation.getNextContext();
             if (this.thread1Context.getStartingCycle() == -1){
@@ -742,8 +746,13 @@ public class DualCore extends Core {
             }
             this.thread1Context.setRemainingQuantum(super.quantum);
             this.oldestThread = 2;
+            if (this.thread2Status == ThreadStatus.Waiting){
+                this.thread2Status = ThreadStatus.Running;
+                this.thread1Status = ThreadStatus.Waiting;
+            }
         } else {
             this.thread2Context.setPc(this.thread2Context.getPc() - 4);
+            this.thread2Context.setQuantumEnded(this.thread2Context.getQuantumEnded() + 1);
             super.simulation.addContext(this.thread2Context);
             this.thread2Context = super.simulation.getNextContext();
             if (this.thread2Context.getStartingCycle() == -1){
@@ -751,6 +760,10 @@ public class DualCore extends Core {
             }
             this.thread2Context.setRemainingQuantum(super.quantum);
             this.oldestThread = 1;
+            if (this.thread1Status == ThreadStatus.Waiting){
+                this.thread1Status = ThreadStatus.Running;
+                this.thread2Status = ThreadStatus.Waiting;
+            }
         }
     }
 
@@ -817,7 +830,7 @@ public class DualCore extends Core {
      * @param isThread1 If the thread is thread 1
      * @return True if was reserved
      */
-    private boolean reserveInstructionPosition (int blockIndex, boolean isThread1){
+    private synchronized boolean reserveInstructionPosition (int blockIndex, boolean isThread1){
         boolean reserved = false;
         if (isThread1 && this.thread2Status != ThreadStatus.InstructionCacheFail && this.thread2Status != ThreadStatus.InstructionCacheFailRunning && this.instructionBusReserved != 2){
             this.thread1Status = ThreadStatus.InstructionCacheFailRunning;
