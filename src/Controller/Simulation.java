@@ -45,6 +45,7 @@ public class Simulation {
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
         this.barrier = new CyclicBarrier(4);
+        this.br = new BufferedReader(new InputStreamReader(System.in));
     }
 
     public CyclicBarrier getBarrier() {

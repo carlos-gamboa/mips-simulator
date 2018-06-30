@@ -84,7 +84,6 @@ public class Context {
             context += this.registers[i] + " ";
         }
         context += "\nDuracion: " + (this.finishingCycle - this.startingCycle) + "\n";
-        context += "\nPC: " + this.pc + "\n";
         context += "--- Fin de contexto hilo " + this.threadName + " ---\n";
         return context;
     }
