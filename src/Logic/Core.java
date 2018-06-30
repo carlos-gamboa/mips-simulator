@@ -109,7 +109,7 @@ public class Core implements Runnable {
         }
         try {
             if(!this.simulation.isSlowMode()){
-                this.simulation.getBarrier().await();
+                this.simulation.getBarrier().await(1000, TimeUnit.MILLISECONDS);
             }
             else{
                 this.simulation.getBarrier().await();
@@ -118,6 +118,8 @@ public class Core implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
+        } catch (TimeoutException e){
+
         }
     }
 

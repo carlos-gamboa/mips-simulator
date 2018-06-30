@@ -112,8 +112,6 @@ public class DualCore extends Core {
             while (this.getThread1Status() == ThreadStatus.Running || this.getThread1Status() == ThreadStatus.DataCacheFailRunning || this.getThread1Status() == ThreadStatus.InstructionCacheFailRunning){
                 instruction = this.checkReservedInstructionPosition(this.thread1Context,this.thread1Context.getPc(), true);
                 if (instruction != null) {
-                    System.out.println(instruction.toString());
-                    System.out.println(this.thread1Context.toString());
                     this.thread1Context.setPc(this.thread1Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread1Context, true);
                 }
@@ -150,8 +148,6 @@ public class DualCore extends Core {
             while (this.getThread2Status() == ThreadStatus.Running || this.getThread2Status() == ThreadStatus.DataCacheFailRunning || this.getThread2Status() == ThreadStatus.InstructionCacheFailRunning) {
                 instruction = checkReservedInstructionPosition(this.thread2Context,this.thread2Context.getPc(), false);
                 if (instruction != null) {
-                    System.out.println(instruction.toString());
-                    System.out.println(this.thread2Context.toString());
                     this.thread2Context.setPc(this.thread2Context.getPc() + 4);
                     this.manageInstruction(instruction, this.thread2Context, false);
                 }
@@ -622,7 +618,6 @@ public class DualCore extends Core {
             }
             else {
                 this.nextCycle();
-                this.startOver(context);
             }
         } else {
             if (this.thread1InstructionReservedPosition != this.instructionCache.calculateIndexByLabel(blockLabel)){
@@ -630,7 +625,6 @@ public class DualCore extends Core {
             }
             else {
                 this.nextCycle();
-                this.startOver(context);
             }
         }
         return instruction;

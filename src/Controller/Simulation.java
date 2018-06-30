@@ -202,10 +202,12 @@ public class Simulation {
      */
     private void tickBarrier(){
         try {
-            this.barrier.await();
+            this.barrier.await(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
+        } catch (TimeoutException e){
+
         }
     }
 
