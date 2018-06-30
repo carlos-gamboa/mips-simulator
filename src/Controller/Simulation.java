@@ -45,6 +45,7 @@ public class Simulation {
         this.threadQueue = new ArrayDeque<>();
         this.finishedThreads = new ArrayDeque<>();
         this.barrier = new CyclicBarrier(4);
+        this.br = new BufferedReader(new InputStreamReader(System.in));
     }
 
     public CyclicBarrier getBarrier() {
@@ -115,10 +116,23 @@ public class Simulation {
     }
 
     public boolean tryLockDataCacheBlock(boolean isSimpleCore, int blockLabel){
-        return true;
+        boolean result;
+        if (isSimpleCore){
+            result = this.dualCore.getDataCache().getLock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel)).tryLock();
+        }
+        else {
+            result = this.simpleCore.getDataCache().getLock(this.simpleCore.getDataCache().calculateIndexByLabel(blockLabel)).tryLock();
+        }
+        return result;
     }
 
     public void unlockDataCacheBlock(boolean isSimpleCore, int blockLabel){
+        if (isSimpleCore){
+            this.dualCore.getDataCache().getLock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel)).unlock();
+        }
+        else {
+            this.simpleCore.getDataCache().getLock(this.simpleCore.getDataCache().calculateIndexByLabel(blockLabel)).unlock();
+        }
     }
     
     public Deque<Context> getThreadQueue() {
@@ -151,8 +165,8 @@ public class Simulation {
     public void start(){
         this.dualCore = new DualCore(this, this.quantum);
         this.simpleCore = new SimpleCore(this, this.quantum);
-        this.simpleCore.start();
         this.dualCore.start();
+        this.simpleCore.start();
 
         while (this.dualCore.isRunning() || this.simpleCore.isRunning()){
             System.out.println(this.getCurrentThreads());
@@ -194,6 +208,7 @@ public class Simulation {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
         } catch (TimeoutException e){
+
         }
     }
 
@@ -319,10 +334,10 @@ public class Simulation {
      */
     public synchronized void changeDataBlockStatusFromOtherCache(boolean isSimpleCore, int blockLabel, CacheStatus status){
         if (isSimpleCore){
-            this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
+            this.dualCore.getDataCache().getBlock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel)).setBlockStatus(status);
         }
         else {
-            this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(status);
+            this.simpleCore.getDataCache().getBlock(this.simpleCore.getDataCache().calculateIndexByLabel(blockLabel)).setBlockStatus(status);
         }
     }
 
@@ -338,10 +353,10 @@ public class Simulation {
 
     public synchronized void invalidateBlockOnOtherCache(boolean isSimpleCore, int blockLabel){
         if (isSimpleCore){
-            this.dualCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
+            this.dualCore.getDataCache().getBlock(this.dualCore.getDataCache().calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Invalid);
         }
         else {
-            this.simpleCore.getDataCache().getBlock(blockLabel).setBlockStatus(CacheStatus.Invalid);
+            this.simpleCore.getDataCache().getBlock(this.simpleCore.getDataCache().calculateIndexByLabel(blockLabel)).setBlockStatus(CacheStatus.Invalid);
         }
     }
 

@@ -119,6 +119,7 @@ public class Core implements Runnable {
             e.printStackTrace();
         } catch (BrokenBarrierException e) {
         } catch (TimeoutException e){
+
         }
     }
 

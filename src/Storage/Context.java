@@ -7,11 +7,13 @@ public class Context {
     private int startingCycle;
     private int finishingCycle;
     private int remainingQuantum;
+    private int quantumEnded;
     private String threadName;
 
     public Context (){
         this.startingCycle = -1;
         this.finishingCycle = -1;
+        this.quantumEnded = 0;
         this.pc = 0;
         this.threadName = "";
         this.registers = new int[32];
@@ -66,6 +68,14 @@ public class Context {
 
     public void setThreadName(String threadName) {
         this.threadName = threadName;
+    }
+
+    public int getQuantumEnded() {
+        return quantumEnded;
+    }
+
+    public void setQuantumEnded(int quantumEnded) {
+        this.quantumEnded = quantumEnded;
     }
 
     public String toString(){
