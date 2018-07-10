@@ -18,7 +18,7 @@ public class DataBlock extends Block {
         return this.blockStatus;
     }
 
-    public void setBlockStatus(CacheStatus blackStatus){
+    public void setBlockStatus(CacheStatus blockStatus){
         this.blockStatus = blockStatus;
     }
 
