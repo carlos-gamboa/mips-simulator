@@ -59,7 +59,7 @@ public class MainMemory {
     public String toString(){
         String memory = "--- MEMORIA PRINCIPAL ---\n";
         for (int i = 0; i < this.dataBlocks.length; ++i){
-            memory += this.dataBlocks[i].toString();
+            memory += this.dataBlocks[i].toString(false);
             memory += "\n";
         }
         memory += "--- FIN DE MEMORIA PRINCIPAL ---";

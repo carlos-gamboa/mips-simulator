@@ -60,4 +60,14 @@ public class DataBlock extends Block {
         return block;
     }
 
+    public String toString(boolean b){
+        String block = "--- BLOQUE " + super.getLabel() + " ---\n";
+        for (int i = 0; i < this.data.length; ++i){
+            block += String.valueOf(this.data[i]);
+            block += "\n";
+        }
+        block += "--- FIN DE BLOQUE " + super.getLabel() + " ---";
+        return block;
+    }
+
 }
