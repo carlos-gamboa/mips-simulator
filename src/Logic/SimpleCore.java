@@ -169,7 +169,7 @@ public class SimpleCore extends Core {
                 if (this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail();
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLabel());
                     }
                     boolean result = this.manageCheckOtherCache(blockLabel, true);
                     if (result){
@@ -267,7 +267,7 @@ public class SimpleCore extends Core {
                 if (this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail();
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLabel());
                     }
                     boolean result = this.manageCheckOtherCache(blockLabel, false);
                     if (result){

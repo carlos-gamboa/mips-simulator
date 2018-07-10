@@ -18,7 +18,7 @@ public class DataBlock extends Block {
         return this.blockStatus;
     }
 
-    public void setBlockStatus(CacheStatus blackStatus){
+    public void setBlockStatus(CacheStatus blockStatus){
         this.blockStatus = blockStatus;
     }
 
@@ -36,7 +36,15 @@ public class DataBlock extends Block {
             block += String.valueOf(this.data[i]);
             block += "\n";
         }
-        block += "--- FIN DE BLOQUE " + super.getLabel() + " ---";
+        block += "Estado: ";
+        if (this.blockStatus == CacheStatus.Modified){
+            block += "Modificado";
+        } else if (this.blockStatus == CacheStatus.Invalid){
+            block += "Inválido";
+        } else {
+            block += "Compartido";
+        }
+        block += "\n--- FIN DE BLOQUE " + super.getLabel() + " ---";
         return block;
     }
 

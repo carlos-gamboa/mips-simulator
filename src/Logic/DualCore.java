@@ -319,7 +319,7 @@ public class DualCore extends Core {
                 if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail(isThread1);
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLabel());
                         this.checkIfCanContinue(isThread1, false);
                     }
                     boolean result = this.manageCheckOtherDataCache(blockLabel, true, context, isThread1);
@@ -426,7 +426,7 @@ public class DualCore extends Core {
                 if (this.reserveDataPosition(this.dataCache.calculateIndexByLabel(blockLabel), isThread1) && this.simulation.getDataBus().tryLock()) {
                     if (this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getBlockStatus() == CacheStatus.Modified){
                         this.manageDataCacheFail(isThread1);
-                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), blockLabel);
+                        this.simulation.saveDataBlockToMainMemory(this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)), this.dataCache.getBlock(this.dataCache.calculateIndexByLabel(blockLabel)).getLabel());
                         this.checkIfCanContinue(isThread1, false);
                     }
                     boolean result = this.manageCheckOtherDataCache(blockLabel, false, context, isThread1);
@@ -689,9 +689,11 @@ public class DualCore extends Core {
                             }
                         }
                     } else {
-                        this.thread1Status = ThreadStatus.Waiting;
-                        while (this.thread1Status != ThreadStatus.Running) {
-                            super.nextCycle();
+                        if (isFinish) {
+                            this.thread1Status = ThreadStatus.Waiting;
+                            while (this.thread1Status != ThreadStatus.Running) {
+                                super.nextCycle();
+                            }
                         }
                     }
                 }
@@ -726,9 +728,11 @@ public class DualCore extends Core {
                             }
                         }
                     } else {
-                        this.thread2Status = ThreadStatus.Waiting;
-                        while (this.thread2Status != ThreadStatus.Running) {
-                            super.nextCycle();
+                        if (isFinish) {
+                            this.thread2Status = ThreadStatus.Waiting;
+                            while (this.thread2Status != ThreadStatus.Running) {
+                                super.nextCycle();
+                            }
                         }
                     }
                 }
