@@ -33,7 +33,7 @@ public class MainMemory {
     }
 
     public void setDataBlock(DataBlock block, int i){
-        dataBlocks[i] = block;
+        dataBlocks[i] = new DataBlock(block);
     }
 
     public void setInstructionBlock(InstructionBlock block, int i){

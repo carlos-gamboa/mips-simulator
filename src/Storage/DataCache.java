@@ -25,7 +25,7 @@ public class DataCache {
     }
 
     public void setBlock(DataBlock block, int i) {
-        this.blocks[i] = block;
+        this.blocks[i] = new DataBlock(block);
     }
 
     /**

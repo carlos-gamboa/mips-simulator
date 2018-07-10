@@ -1,5 +1,7 @@
 package Storage;
 
+import javax.xml.crypto.Data;
+
 public class DataBlock extends Block {
 
     private int[] data;
@@ -13,6 +15,16 @@ public class DataBlock extends Block {
             this.data[i] = 1;
         }
     }
+
+    public DataBlock(DataBlock block) {
+        super(block.getLabel());
+        this.blockStatus = block.getBlockStatus();
+        this.data = new int[4];
+        for (int i = 0; i < 4; ++i){
+            this.data[i] = block.getData(i);
+        }
+    }
+
 
     public CacheStatus getBlockStatus() {
         return this.blockStatus;
